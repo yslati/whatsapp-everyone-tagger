@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WhatsApp Everyone Tagger</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 300px;
+      padding: 10px;
+    }
+    
+    h1 {
+      font-size: 18px;
+      color: #128C7E;
+      text-align: center;
+    }
+    
+    p {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #DCF8C6;
+      margin-top: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .tag-button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #128C7E;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 15px 0;
+      transition: background-color 0.3s;
+    }
+    
+    .tag-button:hover {
+      background-color: #075E54;
+    }
+    
+    .tag-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>WhatsApp Everyone Tagger</h1>
+  
+  <p>Currently on: <span id="current-page">Checking...</span></p>
+  
+  <button id="tag-everyone-btn" class="tag-button" disabled>Tag Everyone in Group</button>
+  
+  <div class="status" id="status-message">
+    Please open a WhatsApp group chat
+  </div>
+
+  <div class="option-container" style="margin-top: 10px; text-align: center;">
+    <label style="font-size: 14px; color: #075E54;">
+      <input type="checkbox" id="clear-input-checkbox" checked>
+      Clear existing text before tagging
+    </label>
+  </div>
+  
+  <p>
+    <strong>How to use:</strong>
+    <ol>
+      <li>Open a WhatsApp group chat</li>
+      <li>Click the "Tag Everyone in Group" button</li>
+      <li>Wait for the extension to tag all group members</li>
+    </ol>
+  </p>
+  
+  <div class="footer">
+    v1.1.0 - Make sure you're on web.whatsapp.com
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
