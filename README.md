@@ -16,7 +16,7 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 
 ### From Chrome Web Store (Recommended)
 
-1. Visit [WhatsApp Everyone Tagger on the Chrome Web Store](#) *(Link to be added once published)*
+1. Visit [WhatsApp Everyone Tagger on the Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
 2. Click "Add to Chrome"
 3. Confirm by clicking "Add extension"
 
