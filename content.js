@@ -2,7 +2,10 @@ console.log('WhatsApp Everyone Tagger Extension loaded');
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action === "tagEveryone") {
-        tagEveryone(request.clearExisting !== undefined ? request.clearExisting : true)
+        tagEveryone(
+            request.clearExisting !== undefined ? request.clearExisting : true,
+            request.speed || 'normal'
+        )
             .then(() => {
                 sendResponse({ success: true });
             })
@@ -19,8 +22,28 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function tagEveryone(clearExisting = true) {
+async function tagEveryone(clearExisting = true, speed = 'normal') {
     try {
+        const delays = {
+            fast: {
+                afterTag: 100,
+                afterTab: 80,
+                afterSpace: 80
+            },
+            normal: {
+                afterTag: 200,
+                afterTab: 150,
+                afterSpace: 150
+            },
+            slow: {
+                afterTag: 400,
+                afterTab: 300,
+                afterSpace: 300
+            }
+        };
+
+        const currentDelays = delays[speed] || delays.normal;
+
         const participantsText = getParticipantsText();
         if (!participantsText) {
             throw new Error('Could not find group members list. Is this a group chat?');
@@ -47,7 +70,7 @@ async function tagEveryone(clearExisting = true) {
 
         for (const participant of participants) {
             document.execCommand('insertText', false, `@${participant}`);
-            await sleep(200);
+            await sleep(currentDelays.afterTag);
             chatInput.dispatchEvent(new KeyboardEvent('keydown', {
                 key: 'Tab',
                 code: 'Tab',
@@ -57,9 +80,9 @@ async function tagEveryone(clearExisting = true) {
                 cancelable: true
             }));
 
-            await sleep(150);
+            await sleep(currentDelays.afterTab);
             document.execCommand('insertText', false, ' ');
-            await sleep(150);
+            await sleep(currentDelays.afterSpace);
         }
 
         return true;

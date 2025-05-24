@@ -2,31 +2,28 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagButton = document.getElementById('tag-everyone-btn');
     const statusMessage = document.getElementById('status-message');
     const currentPageSpan = document.getElementById('current-page');
+    const speedSelect = document.getElementById('speed-select');
+    const speedDescription = document.getElementById('speed-description');
 
     let clearCheckbox = document.getElementById('clear-input-checkbox');
 
-    if (!clearCheckbox) {
-        const optionsContainer = document.createElement('div');
-        optionsContainer.style.marginTop = '10px';
-        optionsContainer.style.textAlign = 'center';
+    const speedDescriptions = {
+        'fast': 'Quick tagging, may miss some tags',
+        'normal': 'Balanced speed for most groups',
+        'slow': 'Slower but more reliable'
+    };
 
-        clearCheckbox = document.createElement('input');
-        clearCheckbox.type = 'checkbox';
-        clearCheckbox.id = 'clear-input-checkbox';
-        clearCheckbox.checked = false;
+    speedSelect.addEventListener('change', function() {
+        speedDescription.textContent = speedDescriptions[speedSelect.value];
+        chrome.storage.local.set({ tagSpeed: speedSelect.value });
+    });
 
-        const clearLabel = document.createElement('label');
-        clearLabel.style.fontSize = '14px';
-        clearLabel.style.color = '#075E54';
-        clearLabel.appendChild(clearCheckbox);
-        clearLabel.appendChild(document.createTextNode(' Clear existing text before tagging'));
-
-        optionsContainer.appendChild(clearLabel);
-
-        tagButton.parentNode.insertBefore(optionsContainer, tagButton.nextSibling);
-    } else {
-        clearCheckbox.checked = false;
-    }
+    chrome.storage.local.get(['tagSpeed'], function(result) {
+        if (result.tagSpeed) {
+            speedSelect.value = result.tagSpeed;
+            speedDescription.textContent = speedDescriptions[result.tagSpeed];
+        }
+    });
 
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         const currentTab = tabs[0];
@@ -48,11 +45,13 @@ document.addEventListener('DOMContentLoaded', function () {
         tagButton.disabled = true;
         statusMessage.textContent = 'Tagging everyone...';
         const clearExisting = document.getElementById('clear-input-checkbox').checked;
+        const speed = speedSelect.value;
 
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {
                 action: "tagEveryone",
-                clearExisting: clearExisting
+                clearExisting: clearExisting,
+                speed: speed
             }, function (response) {
                 if (chrome.runtime.lastError) {
                     console.error('Error sending message:', chrome.runtime.lastError);

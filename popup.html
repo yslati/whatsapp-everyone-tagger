@@ -59,6 +59,39 @@
       color: #999;
       text-align: center;
     }
+    
+    .option-container {
+      margin-top: 10px;
+      text-align: center;
+    }
+    
+    .speed-control {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+    }
+    
+    .speed-control label {
+      display: block;
+      font-size: 14px;
+      color: #075E54;
+      margin-bottom: 5px;
+    }
+    
+    .speed-control select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .speed-value {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -72,11 +105,21 @@
     Please open a WhatsApp group chat
   </div>
 
-  <div class="option-container" style="margin-top: 10px; text-align: center;">
+  <div class="option-container">
     <label style="font-size: 14px; color: #075E54;">
       <input type="checkbox" id="clear-input-checkbox" checked>
       Clear existing text before tagging
     </label>
+  </div>
+  
+  <div class="speed-control">
+    <label for="speed-select">Tagging Speed:</label>
+    <select id="speed-select">
+      <option value="fast">Fast (Risky)</option>
+      <option value="normal" selected>Normal (Recommended)</option>
+      <option value="slow">Slow (Safe)</option>
+    </select>
+    <div class="speed-value" id="speed-description">Balanced speed for most groups</div>
   </div>
   
   <p>
@@ -89,7 +132,7 @@
   </p>
   
   <div class="footer">
-    v1.1.0 - Make sure you're on web.whatsapp.com
+    v1.2.0 - Make sure you're on web.whatsapp.com
   </div>
   
   <script src="popup.js"></script>
