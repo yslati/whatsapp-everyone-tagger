@@ -119,7 +119,7 @@ function findChatInput() {
 
     for (const selector of backupSelectors) {
         const element = document.querySelector(selector);
-        if (element) {
+        if (element && element.closest('footer')) {
             return element;
         }
     }
