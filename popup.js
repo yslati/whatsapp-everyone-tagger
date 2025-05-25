@@ -25,6 +25,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    async function ensureContentScriptInjected(tabId) {
+        try {
+            await chrome.tabs.sendMessage(tabId, { action: "ping" });
+            return true;
+        } catch (error) {
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId: tabId },
+                    files: ['content.js']
+                });
+                console.log('Content script injected successfully');
+                return true;
+            } catch (injectError) {
+                console.error('Failed to inject content script:', injectError);
+                return false;
+            }
+        }
+    }
+
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         const currentTab = tabs[0];
 
@@ -34,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
             tagButton.disabled = false;
             statusMessage.textContent = 'Button enabled! Click to tag everyone.';
             statusMessage.style.backgroundColor = '#DCF8C6';
+            ensureContentScriptInjected(currentTab.id);
         } else {
             currentPageSpan.textContent = 'Not on WhatsApp Web';
             statusMessage.textContent = 'Please navigate to WhatsApp Web';
@@ -41,21 +61,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    tagButton.addEventListener('click', function () {
+    tagButton.addEventListener('click', async function () {
         tagButton.disabled = true;
         statusMessage.textContent = 'Tagging everyone...';
         const clearExisting = document.getElementById('clear-input-checkbox').checked;
         const speed = speedSelect.value;
 
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {
+        chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
+            const tabId = tabs[0].id;
+            
+            const injected = await ensureContentScriptInjected(tabId);
+            
+            if (!injected) {
+                statusMessage.textContent = 'Error: Failed to inject script. Please refresh the page.';
+                statusMessage.style.backgroundColor = '#FFCCCB';
+                tagButton.disabled = false;
+                return;
+            }
+            
+            if (injected) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            chrome.tabs.sendMessage(tabId, {
                 action: "tagEveryone",
                 clearExisting: clearExisting,
                 speed: speed
             }, function (response) {
                 if (chrome.runtime.lastError) {
                     console.error('Error sending message:', chrome.runtime.lastError);
-                    statusMessage.textContent = 'Error: ' + chrome.runtime.lastError.message;
+                    statusMessage.textContent = 'Error: Please refresh WhatsApp Web and try again';
                     statusMessage.style.backgroundColor = '#FFCCCB';
 
                     setTimeout(function () {

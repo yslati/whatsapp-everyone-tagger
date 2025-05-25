@@ -1,6 +1,11 @@
 console.log('WhatsApp Everyone Tagger Extension loaded');
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === "ping") {
+        sendResponse({ status: "ready" });
+        return true;
+    }
+    
     if (request.action === "tagEveryone") {
         tagEveryone(
             request.clearExisting !== undefined ? request.clearExisting : true,
