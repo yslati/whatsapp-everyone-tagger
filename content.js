@@ -96,21 +96,35 @@ function getParticipantsText() {
     const selectors = [
         '#main > header span.selectable-text.copyable-text',
         'div[data-testid="conversation-header"] span.xlyipyv',
-        '.xisnujt span.xlyipyv',
-        'span[title*=","]'
+        '.xisnujt span.xlyipyv'
     ];
 
     for (const selector of selectors) {
         const element = document.querySelector(selector);
-        if (element && element.textContent) {
+        if (element && element.textContent && element.textContent.includes(',')) {
             return element.textContent;
+        }
+    }
+
+    const titleSpans = document.querySelectorAll('span[title]');
+    for (const span of titleSpans) {
+        const title = span.getAttribute('title');
+        if (title && title.includes(',') && !span.closest('[data-testid="conversation-info-header-chat-status"]')) {
+            return title;
         }
     }
 
     const allHeaders = document.querySelectorAll('header span');
     for (const header of allHeaders) {
+        if (header.closest('[data-testid*="status"]') || header.closest('[data-testid*="typing"]')) {
+            continue;
+        }
+        
         if (header.textContent && header.textContent.includes(',')) {
-            return header.textContent;
+            if (!header.textContent.includes('...') && 
+                !header.parentElement?.className?.includes('status')) {
+                return header.textContent;
+            }
         }
     }
 
