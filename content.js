@@ -1,23 +1,25 @@
-console.log('WhatsApp Everyone Tagger Extension loaded');
-
 let tagButton = null;
 let isGroupChat = false;
 let showInlineButton = true;
+let isTagging = false;
 
-// Initialize the extension
-function init() {
-    console.log('Initializing WhatsApp Everyone Tagger...');
-    
-    // Load user preferences
-    chrome.storage.local.get(['showInlineButton'], function(result) {
-        showInlineButton = result.showInlineButton !== false; // default to true
+function init() {    
+    chrome.storage.local.get(['showInlineButton', 'isTagging'], function(result) {
+        showInlineButton = result.showInlineButton !== false;
+        isTagging = result.isTagging || false;
         checkForGroupChat();
         if (showInlineButton) {
             injectTagButton();
         }
     });
     
-    // Monitor for navigation changes
+    chrome.storage.onChanged.addListener(function(changes, namespace) {
+        if (changes.isTagging) {
+            isTagging = changes.isTagging.newValue;
+            updateButtonState();
+        }
+    });
+    
     const observer = new MutationObserver(() => {
         checkForGroupChat();
         if (isGroupChat && !tagButton && showInlineButton) {
@@ -33,7 +35,39 @@ function init() {
     });
 }
 
-// Check if current chat is a group chat
+function updateButtonState() {
+    if (tagButton) {
+        if (isTagging) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
+                </svg>
+                <span style="margin-left: 5px;">Tagging...</span>
+            `;
+            tagButton.disabled = true;
+            tagButton.style.background = '#8696a0';
+        } else {
+            tagButton.innerHTML = `<span style="margin-left: 4px; font-size: 12px;">@everyone</span>`;
+            tagButton.disabled = false;
+            tagButton.style.background = '#00a884';
+        }
+    }
+}
+
+async function setTaggingState(tagging) {
+    isTagging = tagging;
+    await chrome.storage.local.set({ isTagging: tagging });
+    
+    try {
+        chrome.runtime.sendMessage({ 
+            action: "taggingStateChanged", 
+            isTagging: tagging 
+        });
+    } catch (error) {}
+    
+    updateButtonState();
+}
+
 function checkForGroupChat() {
     const participantsText = getParticipantsText();
     const wasGroupChat = isGroupChat;
@@ -41,29 +75,23 @@ function checkForGroupChat() {
     
     if (wasGroupChat !== isGroupChat) {
         if (isGroupChat && showInlineButton) {
-            console.log('Group chat detected');
             injectTagButton();
         } else {
-            console.log('Not a group chat or no chat open');
             removeTagButton();
         }
     }
 }
 
-// Inject the tag button into WhatsApp Web interface
 function injectTagButton() {
     if (tagButton || !isGroupChat || !showInlineButton) return;
     
-    // Find the footer/message input area
     const footer = document.querySelector('footer') || document.querySelector('[data-testid="conversation-compose-box-input"]')?.closest('div');
     
     if (!footer) {
-        console.log('Footer not found, retrying...');
         setTimeout(injectTagButton, 1000);
         return;
     }
     
-    // Create a container for the button positioned above the input area
     const buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
         position: absolute;
@@ -73,7 +101,6 @@ function injectTagButton() {
         pointer-events: none;
     `;
     
-    // Create the tag button
     tagButton = document.createElement('button');
     tagButton.innerHTML = `
         <span style="margin-left: 4px; font-size: 12px;">@everyone</span>
@@ -101,35 +128,38 @@ function injectTagButton() {
     `;
     
     tagButton.onmouseover = () => {
-        tagButton.style.background = '#017c5c';
-        tagButton.style.transform = 'scale(1.05)';
-        tagButton.style.boxShadow = '0 4px 12px rgba(0,168,132,0.4)';
+        if (!isTagging) {
+            tagButton.style.background = '#017c5c';
+            tagButton.style.transform = 'scale(1.05)';
+            tagButton.style.boxShadow = '0 4px 12px rgba(0,168,132,0.4)';
+        }
     };
     
     tagButton.onmouseout = () => {
-        tagButton.style.background = '#00a884';
-        tagButton.style.transform = 'scale(1)';
-        tagButton.style.boxShadow = '0 2px 8px rgba(0,168,132,0.3)';
+        if (!isTagging) {
+            tagButton.style.background = '#00a884';
+            tagButton.style.transform = 'scale(1)';
+            tagButton.style.boxShadow = '0 2px 8px rgba(0,168,132,0.3)';
+        }
     };
     
     tagButton.onclick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        await handleTagButtonClick();
+        if (!isTagging) {
+            await handleTagButtonClick();
+        }
     };
     
-    // Add button to container and container to footer
     buttonContainer.appendChild(tagButton);
-    footer.style.position = 'relative'; // Ensure footer has relative positioning
+    footer.style.position = 'relative';
     footer.appendChild(buttonContainer);
     
-    console.log('Tag button injected above input area');
+    updateButtonState();
 }
 
-// Remove the tag button
 function removeTagButton() {
     if (tagButton) {
-        // Remove the container if it exists, otherwise just the button
         const container = tagButton.parentElement;
         if (container && container !== document.body) {
             container.remove();
@@ -137,25 +167,14 @@ function removeTagButton() {
             tagButton.remove();
         }
         tagButton = null;
-        console.log('Tag button removed');
     }
 }
 
-// Handle tag button click
 async function handleTagButtonClick() {
-    if (!tagButton) return;
+    if (!tagButton || isTagging) return;
     
-    const originalText = tagButton.innerHTML;
-    tagButton.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
-            <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
-        </svg>
-        <span style="margin-left: 5px;">Tagging...</span>
-    `;
-    tagButton.disabled = true;
-    tagButton.style.background = '#8696a0';
+    await setTaggingState(true);
     
-    // Add spinning animation
     const style = document.createElement('style');
     style.textContent = `
         @keyframes spin {
@@ -166,55 +185,49 @@ async function handleTagButtonClick() {
     document.head.appendChild(style);
     
     try {
-        // Get saved preferences
         const result = await chrome.storage.local.get(['tagSpeed', 'clearExisting']);
         const speed = result.tagSpeed || 'normal';
-        const clearExisting = result.clearExisting !== false; // default to true
+        const clearExisting = result.clearExisting !== false;
         
         await tagEveryone(clearExisting, speed);
         
-        // Success feedback
-        tagButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
-            </svg>
-            <span style="margin-left: 5px;">Done!</span>
-        `;
-        tagButton.style.background = '#06d755';
+        if (tagButton) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
+                </svg>
+                <span style="margin-left: 5px;">Done!</span>
+            `;
+            tagButton.style.background = '#06d755';
+        }
         
-        setTimeout(() => {
-            if (tagButton) {
-                tagButton.innerHTML = originalText;
-                tagButton.style.background = '#00a884';
-                tagButton.disabled = false;
-            }
+        setTimeout(async () => {
+            await setTaggingState(false);
         }, 2000);
         
     } catch (error) {
         console.error('Error tagging everyone:', error);
         
-        // Error feedback
-        tagButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
-            </svg>
-            <span style="margin-left: 5px;">Error</span>
-        `;
-        tagButton.style.background = '#f44336';
+        if (tagButton) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                </svg>
+                <span style="margin-left: 5px;">Error</span>
+            `;
+            tagButton.style.background = '#f44336';
+        }
         
-        setTimeout(() => {
-            if (tagButton) {
-                tagButton.innerHTML = originalText;
-                tagButton.style.background = '#00a884';
-                tagButton.disabled = false;
-            }
+        setTimeout(async () => {
+            await setTaggingState(false);
         }, 3000);
     }
     
-    document.head.removeChild(style);
+    if (document.head.contains(style)) {
+        document.head.removeChild(style);
+    }
 }
 
-// Original message listener for popup compatibility
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action === "ping") {
         sendResponse({ status: "ready" });
@@ -233,17 +246,31 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
     
     if (request.action === "tagEveryone") {
-        tagEveryone(
-            request.clearExisting !== undefined ? request.clearExisting : true,
-            request.speed || 'normal'
-        )
-            .then(() => {
-                sendResponse({ success: true });
-            })
-            .catch(error => {
-                console.error('Error tagging everyone:', error);
+        // Check if already tagging
+        if (isTagging) {
+            sendResponse({ success: false, error: "Tagging already in progress" });
+            return true;
+        }
+        
+        // Set tagging state
+        setTaggingState(true).then(() => {
+            return tagEveryone(
+                request.clearExisting !== undefined ? request.clearExisting : true,
+                request.speed || 'normal'
+            );
+        })
+        .then(() => {
+            return setTaggingState(false);
+        })
+        .then(() => {
+            sendResponse({ success: true });
+        })
+        .catch(error => {
+            console.error('Error tagging everyone:', error);
+            setTaggingState(false).then(() => {
                 sendResponse({ success: false, error: error.message });
             });
+        });
 
         return true;
     }
@@ -396,12 +423,10 @@ function findChatInput() {
     return null;
 }
 
-// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
     init();
 }
 
-// Also initialize after a short delay to handle dynamic content
 setTimeout(init, 2000);

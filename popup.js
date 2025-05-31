@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const showInlineButton = document.getElementById('show-inline-button');
 
     let clearCheckbox = document.getElementById('clear-input-checkbox');
+    let isTagging = false;
+    let currentTabId = null;
 
     const speedDescriptions = {
         'fast': 'Quick tagging, may miss some tags',
@@ -16,14 +18,47 @@ document.addEventListener('DOMContentLoaded', function () {
         'slow': 'Slower but more reliable'
     };
 
-    // Handle announcement visibility
-    chrome.storage.local.get(['announcementHidden'], function(result) {
-        if (!result.announcementHidden) {
-            announcement.style.display = 'block';
+    chrome.storage.onChanged.addListener(function(changes, namespace) {
+        if (changes.isTagging) {
+            isTagging = changes.isTagging.newValue;
+            updateButtonState();
         }
     });
 
-    // Close announcement
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        if (request.action === "taggingStateChanged") {
+            isTagging = request.isTagging;
+            updateButtonState();
+        }
+    });
+
+    function updateButtonState() {
+        if (isTagging) {
+            tagButton.disabled = true;
+            statusMessage.textContent = 'Tagging in progress...';
+            statusMessage.style.backgroundColor = '#FFE4B5';
+        } else {
+            tagButton.disabled = false;
+            statusMessage.textContent = 'Ready to tag everyone!';
+            statusMessage.style.backgroundColor = '#DCF8C6';
+        }
+    }
+
+    async function setTaggingState(tagging) {
+        isTagging = tagging;
+        await chrome.storage.local.set({ isTagging: tagging });
+        updateButtonState();
+    }
+
+    chrome.storage.local.get(['announcementHidden', 'isTagging'], function(result) {
+        if (!result.announcementHidden) {
+            announcement.style.display = 'block';
+        }
+        
+        isTagging = result.isTagging || false;
+        updateButtonState();
+    });
+
     closeAnnouncement.addEventListener('click', function() {
         announcement.style.display = 'none';
         chrome.storage.local.set({ announcementHidden: true });
@@ -34,24 +69,19 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.local.set({ tagSpeed: speedSelect.value });
     });
 
-    // Handle clear checkbox toggle
     clearCheckbox.addEventListener('change', function() {
         chrome.storage.local.set({ clearExisting: clearCheckbox.checked });
     });
 
-    // Handle inline button toggle
     showInlineButton.addEventListener('change', function() {
         chrome.storage.local.set({ showInlineButton: showInlineButton.checked });
         
-        // Send message to content script to show/hide button
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            if (tabs[0].url.includes('web.whatsapp.com')) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: "toggleInlineButton",
-                    show: showInlineButton.checked
-                });
-            }
-        });
+        if (currentTabId) {
+            chrome.tabs.sendMessage(currentTabId, {
+                action: "toggleInlineButton",
+                show: showInlineButton.checked
+            });
+        }
     });
 
     chrome.storage.local.get(['tagSpeed', 'showInlineButton', 'clearExisting'], function(result) {
@@ -79,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     target: { tabId: tabId },
                     files: ['content.js']
                 });
-                console.log('Content script injected successfully');
                 return true;
             } catch (injectError) {
                 console.error('Failed to inject content script:', injectError);
@@ -90,13 +119,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         const currentTab = tabs[0];
+        currentTabId = currentTab.id;
 
         if (currentTab.url.includes('web.whatsapp.com')) {
-            currentPageSpan.textContent = 'WhatsApp Web ✓';
+            currentPageSpan.textContent = 'WhatsApp Web';
 
-            tagButton.disabled = false;
-            statusMessage.textContent = 'Button enabled! Click to tag everyone.';
-            statusMessage.style.backgroundColor = '#DCF8C6';
+            if (!isTagging) {
+                tagButton.disabled = false;
+                statusMessage.textContent = 'Button enabled! Click to tag everyone.';
+                statusMessage.style.backgroundColor = '#DCF8C6';
+            }
             ensureContentScriptInjected(currentTab.id);
         } else {
             currentPageSpan.textContent = 'Not on WhatsApp Web';
@@ -106,10 +138,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     tagButton.addEventListener('click', async function () {
-        tagButton.disabled = true;
-        statusMessage.textContent = 'Tagging everyone...';
+        if (isTagging) return;
+        await setTaggingState(true);
         
-        // Get saved preferences
         chrome.storage.local.get(['clearExisting', 'tagSpeed'], function(result) {
             const clearExisting = result.clearExisting !== undefined ? result.clearExisting : true;
             const speed = result.tagSpeed || speedSelect.value;
@@ -122,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!injected) {
                     statusMessage.textContent = 'Error: Failed to inject script. Please refresh the page.';
                     statusMessage.style.backgroundColor = '#FFCCCB';
-                    tagButton.disabled = false;
+                    await setTaggingState(false);
                     return;
                 }
                 
@@ -134,31 +165,32 @@ document.addEventListener('DOMContentLoaded', function () {
                     action: "tagEveryone",
                     clearExisting: clearExisting,
                     speed: speed
-                }, function (response) {
+                }, async function (response) {
                     if (chrome.runtime.lastError) {
                         console.error('Error sending message:', chrome.runtime.lastError);
                         statusMessage.textContent = 'Error: Please refresh WhatsApp Web and try again';
                         statusMessage.style.backgroundColor = '#FFCCCB';
 
-                        setTimeout(function () {
-                            tagButton.disabled = false;
+                        setTimeout(async function () {
+                            await setTaggingState(false);
                         }, 3000);
                         return;
                     }
 
                     if (response && response.success) {
                         statusMessage.textContent = 'Successfully tagged everyone!';
+                        statusMessage.style.backgroundColor = '#DCF8C6';
 
-                        setTimeout(function () {
-                            tagButton.disabled = false;
-                            statusMessage.textContent = 'Ready to tag everyone!';
+                        setTimeout(async function () {
+                            await setTaggingState(false);
                         }, 3000);
                     } else {
-                        statusMessage.textContent = 'Error: ' + (response ? response.error : 'Unknown error');
+                        const errorMessage = response ? response.error : 'Unknown error';
+                        statusMessage.textContent = 'Error: ' + errorMessage;
                         statusMessage.style.backgroundColor = '#FFCCCB';
 
-                        setTimeout(function () {
-                            tagButton.disabled = false;
+                        setTimeout(async function () {
+                            await setTaggingState(false);
                         }, 3000);
                     }
                 });
