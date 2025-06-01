@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const showInlineButton = document.getElementById('show-inline-button');
 
     let clearCheckbox = document.getElementById('clear-input-checkbox');
+    let isTaggingInProgress = false;
 
     const speedDescriptions = {
         'fast': 'Quick tagging, may miss some tags',
@@ -16,14 +17,38 @@ document.addEventListener('DOMContentLoaded', function () {
         'slow': 'Slower but more reliable'
     };
 
-    // Handle announcement visibility
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        if (request.action === "taggingStateChanged") {
+            isTaggingInProgress = request.inProgress;
+            updatePopupButtonState();
+            sendResponse({ received: true });
+        }
+    });
+
+    function updatePopupButtonState() {
+        if (isTaggingInProgress) {
+            tagButton.disabled = true;
+            tagButton.style.backgroundColor = '#cccccc';
+            statusMessage.textContent = 'Tagging in progress... (via inline button)';
+            statusMessage.style.backgroundColor = '#FFF3CD';
+        } else {
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                if (tabs[0].url.includes('web.whatsapp.com')) {
+                    tagButton.disabled = false;
+                    tagButton.style.backgroundColor = '#128C7E';
+                    statusMessage.textContent = 'Ready to tag everyone!';
+                    statusMessage.style.backgroundColor = '#DCF8C6';
+                }
+            });
+        }
+    }
+
     chrome.storage.local.get(['announcementHidden'], function(result) {
         if (!result.announcementHidden) {
             announcement.style.display = 'block';
         }
     });
 
-    // Close announcement
     closeAnnouncement.addEventListener('click', function() {
         announcement.style.display = 'none';
         chrome.storage.local.set({ announcementHidden: true });
@@ -34,16 +59,13 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.local.set({ tagSpeed: speedSelect.value });
     });
 
-    // Handle clear checkbox toggle
     clearCheckbox.addEventListener('change', function() {
         chrome.storage.local.set({ clearExisting: clearCheckbox.checked });
     });
 
-    // Handle inline button toggle
     showInlineButton.addEventListener('change', function() {
         chrome.storage.local.set({ showInlineButton: showInlineButton.checked });
         
-        // Send message to content script to show/hide button
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             if (tabs[0].url.includes('web.whatsapp.com')) {
                 chrome.tabs.sendMessage(tabs[0].id, {
@@ -79,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     target: { tabId: tabId },
                     files: ['content.js']
                 });
-                console.log('Content script injected successfully');
                 return true;
             } catch (injectError) {
                 console.error('Failed to inject content script:', injectError);
@@ -106,10 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     tagButton.addEventListener('click', async function () {
+        if (isTaggingInProgress) return;
+
         tagButton.disabled = true;
         statusMessage.textContent = 'Tagging everyone...';
         
-        // Get saved preferences
         chrome.storage.local.get(['clearExisting', 'tagSpeed'], function(result) {
             const clearExisting = result.clearExisting !== undefined ? result.clearExisting : true;
             const speed = result.tagSpeed || speedSelect.value;
@@ -150,15 +172,29 @@ document.addEventListener('DOMContentLoaded', function () {
                         statusMessage.textContent = 'Successfully tagged everyone!';
 
                         setTimeout(function () {
-                            tagButton.disabled = false;
-                            statusMessage.textContent = 'Ready to tag everyone!';
+                            if (!isTaggingInProgress) {
+                                tagButton.disabled = false;
+                                statusMessage.textContent = 'Ready to tag everyone!';
+                            }
                         }, 3000);
+                    } else if (response && response.error === "Tagging already in progress") {
+                        statusMessage.textContent = 'Tagging already in progress via inline button';
+                        statusMessage.style.backgroundColor = '#FFF3CD';
+                        
+                        setTimeout(function () {
+                            if (!isTaggingInProgress) {
+                                tagButton.disabled = false;
+                                statusMessage.textContent = 'Ready to tag everyone!';
+                            }
+                        }, 2000);
                     } else {
                         statusMessage.textContent = 'Error: ' + (response ? response.error : 'Unknown error');
                         statusMessage.style.backgroundColor = '#FFCCCB';
 
                         setTimeout(function () {
-                            tagButton.disabled = false;
+                            if (!isTaggingInProgress) {
+                                tagButton.disabled = false;
+                            }
                         }, 3000);
                     }
                 });
