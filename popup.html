@@ -5,14 +5,57 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      width: 300px;
-      padding: 10px;
+      width: 320px;
+      padding: 15px;
     }
     
     h1 {
       font-size: 18px;
       color: #128C7E;
       text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .new-feature {
+      background: linear-gradient(135deg, #00a884, #128C7E);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      text-align: center;
+      font-size: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    
+    .new-feature strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+    
+    .close-btn {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 2px 4px;
+      line-height: 1;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-btn:hover {
+      background-color: rgba(255,255,255,0.2);
     }
     
     p {
@@ -62,7 +105,6 @@
     
     .option-container {
       margin-top: 10px;
-      text-align: center;
     }
     
     .speed-control {
@@ -97,6 +139,12 @@
 <body>
   <h1>WhatsApp Everyone Tagger</h1>
   
+  <div class="new-feature" id="announcement" style="display: none;">
+    <button class="close-btn" id="close-announcement">x</button>
+    <strong>New: Inline Button!</strong>
+    Look for the "@everyone" button next to the send button in group chats
+  </div>
+  
   <p>Currently on: <span id="current-page">Checking...</span></p>
   
   <button id="tag-everyone-btn" class="tag-button" disabled>Tag Everyone in Group</button>
@@ -106,9 +154,14 @@
   </div>
 
   <div class="option-container">
-    <label style="font-size: 14px; color: #075E54;">
-      <input type="checkbox" id="clear-input-checkbox" checked>
+    <label style="font-size: 14px; color: #075E54; margin-bottom: 8px; display: block;">
+      <input type="checkbox" id="clear-input-checkbox">
       Clear existing text before tagging
+    </label>
+    
+    <label style="font-size: 14px; color: #075E54; display: block;">
+      <input type="checkbox" id="show-inline-button" checked>
+      Show "@everyone" button
     </label>
   </div>
   
@@ -126,13 +179,14 @@
     <strong>How to use:</strong>
     <ol>
       <li>Open a WhatsApp group chat</li>
-      <li>Click the "Tag Everyone in Group" button</li>
-      <li>Wait for the extension to tag all group members</li>
+      <li>Look for the "@everyone" button next to send, OR</li>
+      <li>Click the "Tag Everyone in Group" button above</li>
+      <li>Wait for the extension to @everyone group members</li>
     </ol>
   </p>
   
   <div class="footer">
-    v1.2.0 - Make sure you're on web.whatsapp.com
+    v1.3.0 - Now with inline button support!
   </div>
   
   <script src="popup.js"></script>
