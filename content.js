@@ -181,7 +181,7 @@ async function handleTagButtonClick() {
     try {
         const result = await chrome.storage.local.get(['tagSpeed', 'clearExisting']);
         const speed = result.tagSpeed || 'normal';
-        const clearExisting = result.clearExisting !== false;
+        const clearExisting = result.clearExisting === true;
         
         await tagEveryone(clearExisting, speed);
         
@@ -258,7 +258,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         `);
         
         tagEveryone(
-            request.clearExisting !== undefined ? request.clearExisting : true,
+            request.clearExisting !== undefined ? request.clearExisting : false,
             request.speed || 'normal'
         )
             .then(() => {
@@ -281,7 +281,174 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function tagEveryone(clearExisting = true, speed = 'normal') {
+async function aggressiveClearChatInput(chatInput) {
+    try {        
+        chatInput.focus();
+        await sleep(100);        
+        const initialLength = chatInput.textContent.length;
+        
+        if (initialLength > 0) {
+            const range = document.createRange();
+            const selection = window.getSelection();   
+            const walker = document.createTreeWalker(
+                chatInput,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let lastTextNode = null;
+            while (walker.nextNode()) {
+                lastTextNode = walker.currentNode;
+            }
+            
+            if (lastTextNode) {
+                range.setStart(lastTextNode, lastTextNode.textContent.length);
+                range.setEnd(lastTextNode, lastTextNode.textContent.length);
+            } else {
+                range.setStart(chatInput, chatInput.childNodes.length);
+                range.setEnd(chatInput, chatInput.childNodes.length);
+            }
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            for (let i = 0; i < initialLength + 10; i++) {
+                chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: 'Backspace',
+                    code: 'Backspace',
+                    keyCode: 8,
+                    which: 8,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                chatInput.dispatchEvent(new KeyboardEvent('keyup', {
+                    key: 'Backspace',
+                    code: 'Backspace',
+                    keyCode: 8,
+                    which: 8,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                if (i % 5 === 0) {
+                    await sleep(10);
+                }
+            }
+            
+            await sleep(100);
+        }
+        
+        if (chatInput.textContent.length > 0) {
+            
+            while (chatInput.firstChild) {
+                chatInput.removeChild(chatInput.firstChild);
+            }
+            
+            chatInput.innerHTML = '';
+            chatInput.textContent = '';
+            chatInput.innerText = '';
+            
+            const p = document.createElement('p');
+            p.setAttribute('class', '');
+            const br = document.createElement('br');
+            br.setAttribute('data-lexical-text', 'true');
+            p.appendChild(br);
+            chatInput.appendChild(p);
+            
+            const eventTypes = [
+                'input', 'change', 'keyup', 'keydown', 'textInput', 
+                'compositionend', 'compositionstart', 'beforeinput'
+            ];
+            
+            eventTypes.forEach(eventType => {
+                try {
+                    chatInput.dispatchEvent(new Event(eventType, { 
+                        bubbles: true, 
+                        cancelable: true 
+                    }));
+                } catch (e) {}
+            });
+            
+            try {
+                chatInput.dispatchEvent(new InputEvent('input', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'deleteContentBackward',
+                    data: null
+                }));
+            } catch (e) {
+                console.warn('InputEvent failed:', e);
+            }
+        }
+        
+        const finalRange = document.createRange();
+        const finalSelection = window.getSelection();
+        finalRange.setStart(chatInput, 0);
+        finalRange.collapse(true);
+        finalSelection.removeAllRanges();
+        finalSelection.addRange(finalRange);
+        
+    } catch (error) {
+        console.error('Aggressive clear failed:', error);
+    }
+}
+
+async function clearChatInput(chatInput) {
+    try {
+        chatInput.focus();
+        await sleep(50);
+        
+        try {
+            chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'a',
+                code: 'KeyA',
+                keyCode: 65,
+                which: 65,
+                ctrlKey: true,
+                bubbles: true,
+                cancelable: true
+            }));
+            
+            await sleep(50);
+            
+            chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Delete',
+                code: 'Delete',
+                keyCode: 46,
+                which: 46,
+                bubbles: true,
+                cancelable: true
+            }));
+            
+            await sleep(50);
+            
+            chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Backspace',
+                code: 'Backspace',
+                keyCode: 8,
+                which: 8,
+                bubbles: true,
+                cancelable: true
+            }));
+            
+            await sleep(100);
+            
+        } catch (keyError) {
+            console.warn('Keyboard simulation failed:', keyError);
+        }
+        
+        if (chatInput.textContent.length > 0) {
+            await aggressiveClearChatInput(chatInput);
+        }
+        
+    } catch (error) {
+        console.error('All clear methods failed:', error);
+    }
+}
+
+async function tagEveryone(clearExisting = false, speed = 'normal') {
     try {
         const delays = {
             fast: {
@@ -319,15 +486,19 @@ async function tagEveryone(clearExisting = true, speed = 'normal') {
         }
 
         chatInput.focus();
+        await sleep(100);
         if (clearExisting) {
-            chatInput.textContent = '';
+            await clearChatInput(chatInput);
+            await sleep(200);
         } else {
             if (chatInput.textContent.length > 0 && !chatInput.textContent.endsWith(' ')) {
                 document.execCommand('insertText', false, ' ');
+                await sleep(50);
             }
         }
 
-        for (const participant of participants) {
+        for (let i = 0; i < participants.length; i++) {
+            const participant = participants[i];
             document.execCommand('insertText', false, `@${participant}`);
             await sleep(currentDelays.afterTag);
             chatInput.dispatchEvent(new KeyboardEvent('keydown', {

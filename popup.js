@@ -86,9 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showInlineButton.checked = result.showInlineButton;
         }
         
-        if (result.clearExisting !== undefined) {
-            clearCheckbox.checked = result.clearExisting;
-        }
+        clearCheckbox.checked = result.clearExisting === true;
     });
 
     async function ensureContentScriptInjected(tabId) {
@@ -133,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
         statusMessage.textContent = 'Tagging everyone...';
         
         chrome.storage.local.get(['clearExisting', 'tagSpeed'], function(result) {
-            const clearExisting = result.clearExisting !== undefined ? result.clearExisting : true;
+            const clearExisting = result.clearExisting === true;
             const speed = result.tagSpeed || speedSelect.value;
 
             chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
