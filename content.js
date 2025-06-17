@@ -31,7 +31,7 @@ function init() {
 function checkForGroupChat() {
     const participantsText = getParticipantsText();
     const wasGroupChat = isGroupChat;
-    isGroupChat = participantsText && participantsText.includes(',');
+    isGroupChat = isActualGroupChat(participantsText);
     
     if (wasGroupChat !== isGroupChat) {
         if (isGroupChat && showInlineButton) {
@@ -40,6 +40,21 @@ function checkForGroupChat() {
             removeTagButton();
         }
     }
+}
+
+function isActualGroupChat(participantsText) {
+    if (!participantsText) return false;
+    if (!participantsText.includes(',')) return false;
+    
+    const hasYouAtEnd = participantsText.trim().endsWith('You') || participantsText.trim().endsWith(', You');    
+    const participants = participantsText.split(',').map(p => p.trim());
+    const nonYouParticipants = participants.filter(p => p && p !== 'You' && p !== '');    
+    const containsPrivacyText = participantsText.toLowerCase().includes('privacy') || 
+                              participantsText.toLowerCase().includes('settings') ||
+                              participantsText.toLowerCase().includes('about information') ||
+                              participantsText.length > 500;
+    
+    return nonYouParticipants.length >= 2 && !containsPrivacyText && (hasYouAtEnd || participants.length >= 3);
 }
 
 function updateInlineButtonState(disabled, text = null) {
@@ -523,37 +538,36 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
 }
 
 function getParticipantsText() {
-    const selectors = [
+    const specificSelectors = [
+        'span.selectable-text.copyable-text[title]',
         '#main > header span.selectable-text.copyable-text',
-        'div[data-testid="conversation-header"] span.xlyipyv',
-        '.xisnujt span.xlyipyv'
+        'div[data-testid="conversation-header"] span.xlyipyv.selectable-text.copyable-text'
     ];
 
-    for (const selector of selectors) {
+    for (const selector of specificSelectors) {
         const element = document.querySelector(selector);
         if (element && element.textContent && element.textContent.includes(',')) {
-            return element.textContent;
+            const text = element.textContent.trim();
+            if (text.length > 500 || 
+                text.toLowerCase().includes('privacy') || 
+                text.toLowerCase().includes('settings') ||
+                text.toLowerCase().includes('about information')) {
+                continue;
+            }
+            return text;
         }
     }
 
     const titleSpans = document.querySelectorAll('span[title]');
     for (const span of titleSpans) {
         const title = span.getAttribute('title');
-        if (title && title.includes(',') && !span.closest('[data-testid="conversation-info-header-chat-status"]')) {
-            return title;
-        }
-    }
-
-    const allHeaders = document.querySelectorAll('header span');
-    for (const header of allHeaders) {
-        if (header.closest('[data-testid*="status"]') || header.closest('[data-testid*="typing"]')) {
-            continue;
-        }
-        
-        if (header.textContent && header.textContent.includes(',')) {
-            if (!header.textContent.includes('...') && 
-                !header.parentElement?.className?.includes('status')) {
-                return header.textContent;
+        if (title && title.includes(',') && 
+            !span.closest('[data-testid="conversation-info-header-chat-status"]') &&
+            !title.toLowerCase().includes('privacy') &&
+            title.length < 500) {
+            
+            if (span.classList.contains('selectable-text') && span.classList.contains('copyable-text')) {
+                return title;
             }
         }
     }
