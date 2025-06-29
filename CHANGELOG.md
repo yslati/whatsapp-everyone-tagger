@@ -5,6 +5,37 @@ All notable changes to WhatsApp Everyone Tagger will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-06-29
+
+### Added
+- **Universal language support** - Extension now works in any language (French, Spanish, Arabic, etc.)
+- **Advanced participant detection** - Intelligent scoring system to identify participant lists vs group names
+- **Comprehensive phone number support** - Handles international formats like +212 xxx-xxx-xxx correctly
+- **Smart group name filtering** - Automatically excludes group names from participant tagging
+
+### Fixed
+- **Major fix**: Participant detection now works with community groups and large groups
+- **Major fix**: Prevents group name contamination in participant lists
+- **Major fix**: Preserves first group member who was previously being lost
+- **Major fix**: Correctly handles international phone numbers for tagging
+- **Major fix**: Language-agnostic current user detection (no longer hardcoded to "You")
+- Fixed issue where extension would fail with error "Could not find group members list"
+- Fixed phone numbers losing '+' prefix which prevented WhatsApp tagging
+- Fixed duplicate participant detection and removal
+
+### Changed
+- **Breaking change**: Detection system completely rewritten for better reliability
+- Improved participant parsing to handle mixed name/phone number lists
+- Enhanced filtering logic to distinguish between group names and participant lists
+- Better Unicode support for names in all languages and scripts
+- More robust error handling and user feedback
+
+### Technical Improvements
+- Prioritizes `title` attribute over `textContent` for cleaner data extraction
+- Implements multi-method participant detection with fallback strategies
+- Uses semantic DOM structure analysis instead of fragile CSS selectors
+- Adds comprehensive participant validation and normalization
+
 ## [1.3.1] - 2025-06-01
 
 ### Fixed

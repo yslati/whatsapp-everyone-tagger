@@ -6,16 +6,18 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 
 ## Features
 
-- ✅ Tag all members in a WhatsApp group chat with one click
+- ✅ **Universal Language Support** - Works in any language (English, French, Spanish, Arabic, etc.)
+- ✅ **Smart Group Detection** - Automatically detects group chats vs individual chats
+- ✅ **International Phone Support** - Properly handles international numbers like +212 xxx-xxx-xxx
 - ✅ **Inline "@everyone" button** - Appears directly next to the send button in group chats
 - ✅ **Speed control** - Choose between Fast, Normal, or Slow tagging speeds
 - ✅ **Smart text handling** - Option to clear existing text or append the tags
-- ✅ **Robust clearing functionality** - Advanced text clearing that works with WhatsApp's editor
-- ✅ Saves your preferences (speed settings, button visibility)
-- ✅ Works with the latest version of WhatsApp Web
-- ✅ Automatically detects typing indicators to avoid tagging errors
-- ✅ Simple and intuitive interface
-- ✅ Lightweight and fast
+- ✅ **Robust participant detection** - Works with community groups, large groups, and all group types
+- ✅ **Advanced filtering** - Automatically excludes group names and invalid entries
+- ✅ **Saves preferences** - Remembers your settings (speed, button visibility, text clearing)
+- ✅ **Works with latest WhatsApp Web** - Compatible with all WhatsApp Web updates
+- ✅ **Simple and intuitive interface** - Easy to use for everyone
+- ✅ **Lightweight and fast** - Minimal impact on browser performance
 
 ## Installation
 
@@ -65,6 +67,32 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
   - **Slow**: More reliable for large groups or slower connections
 - **Inline Button**: Show/hide the "@everyone" button next to the send button
 
+## Language Support
+
+The extension works seamlessly in **any language**:
+
+- 🇺🇸 **English**: "You" detection
+- 🇫🇷 **French**: "Vous", "Toi" detection  
+- 🇪🇸 **Spanish**: "Tú" detection
+- 🇩🇪 **German**: "Du", "Sie" detection
+- 🇸🇦 **Arabic**: "أنت" detection
+- 🇷🇺 **Russian**: "Ты", "Вы" detection
+- 🇯🇵 **Japanese**: "あなた" detection
+- 🇰🇷 **Korean**: "당신" detection
+- And many more...
+
+No configuration needed - the extension automatically adapts to your WhatsApp language!
+
+## Group Type Compatibility
+
+Works with **all types** of WhatsApp groups:
+
+- ✅ **Regular Groups** - Standard WhatsApp groups
+- ✅ **Large Groups** - Groups with 100+ members  
+- ✅ **Community Groups** - WhatsApp Community sub-groups
+- ✅ **International Groups** - Mixed phone numbers and names
+- ✅ **Multilingual Groups** - Groups with members from different countries
+
 ## Screenshots
 
 ![screenshot](example/example.png)
@@ -73,6 +101,9 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 
 ### "Could not establish connection" error
 If you installed the extension while WhatsApp Web was already open, you'll need to reload the page. The extension will prompt you to do this automatically.
+
+### "Could not find group members list" error
+This has been **fixed in v1.4.0**! The new version works with all group types including community groups and large groups.
 
 ### Tags appearing in search bar
 The extension automatically detects and avoids the search bar. If you experience issues, try updating to the latest version.
@@ -92,6 +123,12 @@ The extension uses advanced clearing methods specifically designed for WhatsApp'
 - Try using "Slow" speed setting for better reliability
 - Ensure you have a stable internet connection
 - For very large groups (50+ members), "Slow" speed is recommended
+
+### International phone numbers not being tagged
+**Fixed in v1.4.0**! The extension now properly preserves the '+' prefix for international numbers, ensuring they work correctly with WhatsApp's tagging system.
+
+### First group member missing
+**Fixed in v1.4.0**! The improved participant detection prevents the first member from being incorrectly filtered out.
 
 ## Why This Extension?
 
@@ -116,17 +153,23 @@ See [PRIVACY.md](PRIVACY.md) for complete privacy policy.
 
 ## Recent Updates
 
-### Version 1.3.1 (Latest)
+### Version 1.4.0 (Latest) - Major Universal Compatibility Update
+- ✨ **Universal language support** - Now works in any language automatically
+- 🔧 **Fixed participant detection** - Works with community groups and large groups
+- 🔧 **Fixed international phone numbers** - Proper +212 xxx format support
+- 🔧 **Fixed first member loss** - No longer loses first group member
+- 🛠️ **Smart group name filtering** - Automatically excludes group names
+- 🌍 **Enhanced Unicode support** - Names in any script (Arabic, Chinese, etc.)
+
+### Version 1.3.1
 - 🔧 **Fixed clear existing text functionality** - Now works reliably with WhatsApp's editor
 - 🔧 **Changed default behavior** - "Clear existing text" is now unchecked by default
 - ✨ **Improved text handling** - Better support for appending tags to existing messages
-- 🛠️ **Enhanced debugging** - Added console logging for troubleshooting
 
 ### Version 1.3.0
 - ✨ **New inline "@everyone" button** - Appears directly next to the send button
 - ⚡ **Improved user experience** - No need to open extension popup
 - 🎛️ **Enhanced settings** - Toggle button visibility and save preferences
-- 🔧 **Better error handling** - More reliable tagging process
 
 ## Changelog
 
@@ -160,8 +203,14 @@ A: Currently, the extension tags all group members. Individual member selection 
 **Q: Is this safe to use?**
 A: Yes, the extension is completely local and doesn't send any data externally. It only simulates typing in the WhatsApp Web interface.
 
+**Q: Does it work in my language?**
+A: Yes! Version 1.4.0 supports all languages automatically. Whether your WhatsApp is in English, Arabic, French, Spanish, or any other language, the extension will work perfectly.
+
+**Q: What about community groups?**
+A: Yes, the extension now works with all types of groups including WhatsApp Community sub-groups and large groups.
+
 ---
 
-Made with ❤️ for WhatsApp group admins and members
+Made with ❤️ for WhatsApp group admins and members worldwide
 
-**Current Version: 1.3.1** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
+**Current Version: 1.4.0** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
