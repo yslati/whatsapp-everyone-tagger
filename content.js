@@ -538,48 +538,233 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
 }
 
 function getParticipantsText() {
-    const specificSelectors = [
-        'span.selectable-text.copyable-text[title]',
-        '#main > header span.selectable-text.copyable-text',
-        'div[data-testid="conversation-header"] span.xlyipyv.selectable-text.copyable-text'
-    ];
-
-    for (const selector of specificSelectors) {
-        const element = document.querySelector(selector);
-        if (element && element.textContent && element.textContent.includes(',')) {
-            const text = element.textContent.trim();
-            if (text.length > 500 || 
-                text.toLowerCase().includes('privacy') || 
-                text.toLowerCase().includes('settings') ||
-                text.toLowerCase().includes('about information')) {
-                continue;
-            }
-            return text;
-        }
+    const conversationHeader = document.querySelector('#main header') || 
+                              document.querySelector('header[data-testid*="conversation"]') ||
+                              document.querySelector('[data-testid="conversation-header"]') ||
+                              document.querySelector('main header') ||
+                              document.querySelector('header');
+    
+    if (!conversationHeader) {
+        console.warn('No conversation header found');
+        return null;
     }
-
-    const titleSpans = document.querySelectorAll('span[title]');
-    for (const span of titleSpans) {
-        const title = span.getAttribute('title');
-        if (title && title.includes(',') && 
-            !span.closest('[data-testid="conversation-info-header-chat-status"]') &&
-            !title.toLowerCase().includes('privacy') &&
-            title.length < 500) {
+    
+    const participantCandidates = [];
+    const allElements = conversationHeader.querySelectorAll('*');
+    
+    for (const element of allElements) {
+        if (element.closest('[data-testid*="status"]') || 
+            element.closest('[data-testid*="typing"]') ||
+            element.closest('button') ||
+            element.tagName === 'IMG' ||
+            element.tagName === 'SVG') {
+            continue;
+        }
+        
+        const title = element.getAttribute('title');
+        const text = element.textContent;
+        
+        if (title && isParticipantList(title)) {
+            const commaCount = (title.match(/,/g) || []).length;
             
-            if (span.classList.contains('selectable-text') && span.classList.contains('copyable-text')) {
-                return title;
+            if (commaCount >= 3) {
+                participantCandidates.push({
+                    content: title,
+                    score: calculateUniversalScore(title) + 100,
+                    source: 'title'
+                });
+            }
+        }
+        
+        if (text && text !== title && isParticipantList(text)) {
+            const commaCount = (text.match(/,/g) || []).length;
+            
+            if (commaCount >= 3) {
+                const words = text.split(/[\s,]+/);
+                const nonCommaWords = words.filter(w => w.trim() && !w.includes(','));
+                
+                if (nonCommaWords.length > 0 && nonCommaWords[0].length > 10) {
+                    participantCandidates.push({
+                        content: text,
+                        score: calculateUniversalScore(text) - 50,
+                        source: 'text (contaminated)'
+                    });
+                } else {
+                    participantCandidates.push({
+                        content: text,
+                        score: calculateUniversalScore(text),
+                        source: 'text'
+                    });
+                }
             }
         }
     }
+    
+    if (participantCandidates.length === 0) return null;    
+    participantCandidates.sort((a, b) => b.score - a.score);
+    
+    return participantCandidates[0].content;
+}
 
-    return null;
+function isParticipantList(text) {
+    if (!text || typeof text !== 'string' || text.length < 3) return false;    
+    if (!text.includes(',')) return false;
+    
+    const commaCount = (text.match(/,/g) || []).length;
+    if (commaCount < 1 || commaCount > 1000) return false;
+    
+    const excludePatterns = [
+        /^\s*$/,                    // Empty or whitespace only
+        /\.\.\./,                   // Loading indicators
+        /typing/i,
+        /online/i,
+        /last seen/i,
+        /ago/i,
+        /yesterday/i,
+        /today/i,
+        /connecting/i,
+        /searching/i,
+        /loading/i,
+        /^[,\s]+$/,                 // Only commas and spaces
+        /^[\d\s,.-]+$/,             // Only digits, spaces, commas, dots, dashes
+        /^\d{1,2}:\d{2}/,           // Time stamps
+        /\d{4}-\d{2}-\d{2}/,        // Dates
+    ];
+    
+    return !excludePatterns.some(pattern => pattern.test(text));
+}
+
+function calculateUniversalScore(text) {
+    let score = 0;
+    const commaCount = (text.match(/,/g) || []).length;
+    score += commaCount * 15;    
+    
+    const phonePatterns = [
+        /\+\d{1,4}[\s-]?\d{3,4}[\s-]?\d{3,4}[\s-]?\d{0,4}/g,
+        /\d{3}[-.\s]?\d{3}[-.\s]?\d{3,4}/g,
+        /\(\d{3}\)\s?\d{3}[-.\s]?\d{4}/g
+    ];
+    
+    for (const pattern of phonePatterns) {
+        const matches = text.match(pattern) || [];
+        score += matches.length * 25;
+    }
+    
+    const namePattern = /\b[A-Za-z\u00C0-\u017F\u0590-\u05FF\u0600-\u06FF\u4e00-\u9fff]{2,}(?:[\s'-][A-Za-z\u00C0-\u017F\u0590-\u05FF\u0600-\u06FF\u4e00-\u9fff]+)*\b/g;
+    const nameMatches = text.match(namePattern) || [];
+    score += nameMatches.length * 10;
+    
+    if (text.length >= 20 && text.length <= 10000) {
+        score += 20;
+    }
+    
+    const parts = text.split(',').map(p => p.trim());
+    if (parts.length >= 2) {
+        const lastPart = parts[parts.length - 1];
+        const isLikelyCurrentUser = 
+            /^[A-Za-z\u00C0-\u017F\u0590-\u05FF\u0600-\u06FF\u4e00-\u9fff]{2,10}$/.test(lastPart) &&
+            parts.slice(0, -1).every(part => !part.toLowerCase().includes(lastPart.toLowerCase())) &&
+            !/\d/.test(lastPart);
+            
+        if (isLikelyCurrentUser) {
+            score += 40;
+        }
+    }
+    
+    if (text.length > 10000) score -= 50;
+    
+    const onlyNumbersAndCommas = /^[\d\s,.-]+$/.test(text);
+    if (onlyNumbersAndCommas) score -= 30;
+    
+    return score;
 }
 
 function parseParticipants(text) {
+    if (!text) return [];
+    
     const separator = text.includes('，') ? '，' : ',';
-    let participants = text.split(separator).map(p => p.trim());
-    participants = participants.filter(p => p && p !== '' && !p.includes('You'));
+    let participants = text.split(separator).map(p => p.trim()).filter(p => p.length > 0);
+    
+    if (participants.length >= 2) {
+        const lastEntry = participants[participants.length - 1];
+        const isLikelyCurrentUser = 
+            /^[A-Za-z\u00C0-\u017F\u0590-\u05FF\u0600-\u06FF\u4e00-\u9fff]{2,10}$/.test(lastEntry) &&
+            !/\d/.test(lastEntry) &&
+            lastEntry.length <= 10 &&
+            participants.slice(0, -1).every(p => !p.toLowerCase().includes(lastEntry.toLowerCase())) &&
+            participants.length > 2;
+            
+        if (isLikelyCurrentUser) {
+            participants = participants.slice(0, -1);
+        }
+    }
+    
+    participants = participants.filter((participant, index) => {
+        if (!participant || /^\s*$/.test(participant)) return false;        
+        if (/^(typing|online|last seen|connecting|loading)/i.test(participant)) return false;
+        
+        const youVariations = /^(you|toi|vous|tú|tu|du|sie|أنت|ты|вы|당신|あなた|คุณ|आप|તમે)$/i;
+        if (youVariations.test(participant)) return false;
+        if (participant.length > 50) return false;
+        
+        if (index === 0 && participants.length > 3) {
+            const looksLikeGroupName = 
+                participant.length > 20 || // Long descriptive name
+                /\(.*\)/.test(participant) || // Contains parentheses
+                /\[.*\]/.test(participant) || // Contains brackets
+                /-/.test(participant) && !/^\+?\d/.test(participant) || // Contains dashes but not phone
+                /group|chat|team|class|project/i.test(participant); // Contains group keywords
+                
+            if (looksLikeGroupName) return false;
+        }
+        
+        const hasLetters = /[A-Za-z\u00C0-\u017F\u0590-\u05FF\u0600-\u06FF\u4e00-\u9fff]/.test(participant);
+        const hasNumbers = /\d/.test(participant);
+        
+        return hasLetters || hasNumbers;
+    });
+    
+    participants = participants.map(participant => {
+        if (/^\+?\d/.test(participant)) {
+            if (!participant.startsWith('+') && /^\d{3}/.test(participant)) {
+                return '+' + participant;
+            }
+            return participant;
+        }
+        return participant;
+    });
+    
+    const seen = new Set();
+    participants = participants.filter(participant => {
+        const normalized = participant.toLowerCase().replace(/[\s+-]/g, '');
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+    });
+    
     return participants;
+}
+
+function checkForGroupChat() {
+    const participantsText = getParticipantsText();
+    const wasGroupChat = isGroupChat;
+    
+    if (!participantsText) {
+        isGroupChat = false;
+    } else {
+        const participants = parseParticipants(participantsText);
+        isGroupChat = participants.length >= 2;
+    }
+    
+    if (wasGroupChat !== isGroupChat) {
+        if (isGroupChat && showInlineButton) {
+            injectTagButton();
+        } else {
+            removeTagButton();
+        }
+    }
+    
+    return isGroupChat;
 }
 
 function findChatInput() {
