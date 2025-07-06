@@ -5,6 +5,44 @@ All notable changes to WhatsApp Everyone Tagger will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-07-06
+
+### Added
+- **Welcome page integration** - Opens welcome/tutorial page on first installation
+- **Automatic content script injection** - Background service worker automatically injects scripts
+- **Smart refresh detection** - Automatically detects when refresh is needed and provides options
+- **Auto-refresh functionality** - One-click refresh button for immediate activation
+- **Enhanced installation experience** - Seamless setup process for new users
+- **Background service worker** - Improved reliability and performance with Manifest V3
+
+### Fixed
+- **Major fix**: Eliminated "Could not establish connection" errors on installation
+- **Major fix**: Extension now works immediately after installation without manual refresh
+- **Major fix**: Automatic script injection into existing WhatsApp Web tabs
+- Fixed content script loading issues when extension is installed on open tabs
+- Improved error handling for script injection failures
+
+### Changed
+- **Breaking change**: Now uses Manifest V3 with service worker instead of background page
+- Enhanced popup UI with automatic refresh notifications
+- Improved user onboarding with welcome page tutorial
+- Better error messages and user guidance
+- More robust tab management and script injection
+
+### Technical Improvements
+- Implemented background service worker for better resource management
+- Added automatic content script injection on tab updates
+- Enhanced tab query and management for WhatsApp Web detection
+- Improved error handling and logging for debugging
+- Better separation of concerns between background and content scripts
+
+### User Experience
+- **Smoother installation** - No more manual refresh required after installation
+- **Clear guidance** - Visual notifications when refresh is needed
+- **One-click fixes** - Automatic refresh button for common issues
+- **Better onboarding** - Welcome page with setup instructions
+- **Improved reliability** - Background worker ensures consistent functionality
+
 ## [1.4.0] - 2025-06-29
 
 ### Added

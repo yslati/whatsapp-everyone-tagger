@@ -107,22 +107,119 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    async function checkContentScriptStatus(tabId) {
+        try {
+            const response = await chrome.tabs.sendMessage(tabId, { action: "ping" });
+            return response && response.status === "ready";
+        } catch (error) {
+            return false;
+        }
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
         const currentTab = tabs[0];
 
         if (currentTab.url.includes('web.whatsapp.com')) {
-            currentPageSpan.textContent = 'WhatsApp Web ✓';
-
-            tagButton.disabled = false;
-            statusMessage.textContent = 'Button enabled! Click to tag everyone.';
-            statusMessage.style.backgroundColor = '#DCF8C6';
-            ensureContentScriptInjected(currentTab.id);
+            currentPageSpan.textContent = 'WhatsApp Web';
+            
+            const isContentScriptReady = await checkContentScriptStatus(currentTab.id);
+            
+            if (isContentScriptReady) {
+                tagButton.disabled = false;
+                statusMessage.textContent = 'Ready to tag everyone!';
+                statusMessage.style.backgroundColor = '#DCF8C6';
+            } else {
+                showRefreshNotification();
+            }
         } else {
             currentPageSpan.textContent = 'Not on WhatsApp Web';
             statusMessage.textContent = 'Please navigate to WhatsApp Web';
             statusMessage.style.backgroundColor = '#FFCCCB';
         }
     });
+
+    function showRefreshNotification() {
+        const refreshNotification = document.createElement('div');
+        refreshNotification.id = 'refresh-notification';
+        refreshNotification.style.cssText = `
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 13px;
+            box-shadow: 0 3px 8px rgba(255,107,107,0.3);
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        refreshNotification.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                    <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                </svg>
+                <strong>Refresh Required</strong>
+            </div>
+            <div style="margin-bottom: 10px; font-size: 12px; line-height: 1.4;">
+                Extension was installed after opening WhatsApp.<br>
+                Please refresh the page to activate.
+            </div>
+            <button id="auto-refresh-btn" style="
+                background: rgba(255,255,255,0.2);
+                color: white;
+                border: 1px solid rgba(255,255,255,0.3);
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-right: 8px;
+                transition: all 0.2s ease;
+            ">Refresh Now</button>
+            <button id="manual-refresh-btn" style="
+                background: transparent;
+                color: white;
+                border: 1px solid rgba(255,255,255,0.3);
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            ">I'll do it manually</button>
+        `;
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+        document.body.insertBefore(refreshNotification, document.body.firstChild);
+        document.getElementById('auto-refresh-btn').addEventListener('click', function() {
+            this.innerHTML = 'Refreshing...';
+            this.disabled = true;
+            
+            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                chrome.tabs.reload(tabs[0].id, function() {
+                    setTimeout(() => window.close(), 500);
+                });
+            });
+        });
+
+        document.getElementById('manual-refresh-btn').addEventListener('click', function() {
+            refreshNotification.style.display = 'none';
+            statusMessage.textContent = 'Please refresh WhatsApp Web (F5 or Ctrl+R)';
+            statusMessage.style.backgroundColor = '#FFF3CD';
+            statusMessage.style.color = '#856404';
+        });
+
+        tagButton.disabled = true;
+        statusMessage.textContent = 'Refresh required to activate extension';
+        statusMessage.style.backgroundColor = '#FFF3CD';
+        statusMessage.style.color = '#856404';
+    }
 
     tagButton.addEventListener('click', async function () {
         if (isTaggingInProgress) return;

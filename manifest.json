@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "WhatsApp Everyone Tagger",
     "description": "Tag everyone in a WhatsApp group with one click - now with inline button!",
-    "version": "1.4.0",
+    "version": "2.0.0",
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
@@ -28,6 +28,9 @@
             "all_frames": false
         }
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "permissions": [
         "activeTab",
         "storage",
