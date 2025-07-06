@@ -16,6 +16,8 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 - ✅ **Advanced filtering** - Automatically excludes group names and invalid entries
 - ✅ **Saves preferences** - Remembers your settings (speed, button visibility, text clearing)
 - ✅ **Works with latest WhatsApp Web** - Compatible with all WhatsApp Web updates
+- ✅ **Seamless installation** - Auto-setup with welcome page and instant activation
+- ✅ **Auto-refresh detection** - Smart detection and one-click fixes for common issues
 - ✅ **Simple and intuitive interface** - Easy to use for everyone
 - ✅ **Lightweight and fast** - Minimal impact on browser performance
 
@@ -26,6 +28,8 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 1. Visit [WhatsApp Everyone Tagger on the Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
 2. Click "Add to Chrome"
 3. Confirm by clicking "Add extension"
+4. **New in v2.0**: A welcome page will automatically open with setup instructions
+5. **Ready to use**: The extension will work immediately on any open WhatsApp Web tabs
 
 ### Manual Installation (Developer Mode)
 
@@ -33,7 +37,7 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable "Developer mode" by toggling the switch in the top right corner
 4. Click "Load unpacked" and select the folder containing the extension files
-5. The extension is now installed and ready to use
+5. The extension is now installed and will automatically inject into any open WhatsApp Web tabs
 
 ## How to Use
 
@@ -67,22 +71,6 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
   - **Slow**: More reliable for large groups or slower connections
 - **Inline Button**: Show/hide the "@everyone" button next to the send button
 
-## Language Support
-
-The extension works seamlessly in **any language**:
-
-- 🇺🇸 **English**: "You" detection
-- 🇫🇷 **French**: "Vous", "Toi" detection  
-- 🇪🇸 **Spanish**: "Tú" detection
-- 🇩🇪 **German**: "Du", "Sie" detection
-- 🇸🇦 **Arabic**: "أنت" detection
-- 🇷🇺 **Russian**: "Ты", "Вы" detection
-- 🇯🇵 **Japanese**: "あなた" detection
-- 🇰🇷 **Korean**: "당신" detection
-- And many more...
-
-No configuration needed - the extension automatically adapts to your WhatsApp language!
-
 ## Group Type Compatibility
 
 Works with **all types** of WhatsApp groups:
@@ -99,11 +87,20 @@ Works with **all types** of WhatsApp groups:
 
 ## Troubleshooting
 
+### ✅ Installation Issues (Fixed in v2.0.0!)
+**New in v2.0**: The extension now works immediately after installation! No more manual refresh needed.
+
+- **Automatic setup**: Extension automatically injects into existing WhatsApp Web tabs
+- **Smart detection**: If refresh is needed, you'll see a notification with one-click fix
+- **Welcome page**: First-time users get a helpful setup guide
+
+### Legacy Issues (Mostly Fixed)
+
 ### "Could not establish connection" error
-If you installed the extension while WhatsApp Web was already open, you'll need to reload the page. The extension will prompt you to do this automatically.
+**Fixed in v2.0.0!** The new background service worker automatically handles script injection.
 
 ### "Could not find group members list" error
-This has been **fixed in v1.4.0**! The new version works with all group types including community groups and large groups.
+**Fixed in v1.4.0!** The new version works with all group types including community groups and large groups.
 
 ### Tags appearing in search bar
 The extension automatically detects and avoids the search bar. If you experience issues, try updating to the latest version.
@@ -125,10 +122,10 @@ The extension uses advanced clearing methods specifically designed for WhatsApp'
 - For very large groups (50+ members), "Slow" speed is recommended
 
 ### International phone numbers not being tagged
-**Fixed in v1.4.0**! The extension now properly preserves the '+' prefix for international numbers, ensuring they work correctly with WhatsApp's tagging system.
+**Fixed in v1.4.0!** The extension now properly preserves the '+' prefix for international numbers, ensuring they work correctly with WhatsApp's tagging system.
 
 ### First group member missing
-**Fixed in v1.4.0**! The improved participant detection prevents the first member from being incorrectly filtered out.
+**Fixed in v1.4.0!** The improved participant detection prevents the first member from being incorrectly filtered out.
 
 ## Why This Extension?
 
@@ -138,6 +135,7 @@ WhatsApp doesn't offer a built-in way to tag all members in a group chat at once
 
 - Works with Google Chrome (version 88+)
 - Compatible with the latest version of WhatsApp Web
+- Uses Manifest V3 for enhanced security and performance
 - Does not work with WhatsApp desktop app
 
 ## Privacy
@@ -153,7 +151,15 @@ See [PRIVACY.md](PRIVACY.md) for complete privacy policy.
 
 ## Recent Updates
 
-### Version 1.4.0 (Latest) - Major Universal Compatibility Update
+### Version 2.0.0 (Latest) - Major Installation & Reliability Update
+- 🚀 **Seamless installation** - Works immediately after installation, no refresh needed
+- 🔧 **Fixed connection errors** - Eliminated "Could not establish connection" issues
+- ✨ **Welcome page integration** - Helpful setup guide for new users
+- 🛠️ **Background service worker** - Enhanced reliability with Manifest V3
+- ⚡ **Auto-refresh detection** - Smart notifications with one-click fixes
+- 🎯 **Auto script injection** - Automatically works on existing WhatsApp Web tabs
+
+### Version 1.4.0
 - ✨ **Universal language support** - Now works in any language automatically
 - 🔧 **Fixed participant detection** - Works with community groups and large groups
 - 🔧 **Fixed international phone numbers** - Proper +212 xxx format support
@@ -204,13 +210,19 @@ A: Currently, the extension tags all group members. Individual member selection 
 A: Yes, the extension is completely local and doesn't send any data externally. It only simulates typing in the WhatsApp Web interface.
 
 **Q: Does it work in my language?**
-A: Yes! Version 1.4.0 supports all languages automatically. Whether your WhatsApp is in English, Arabic, French, Spanish, or any other language, the extension will work perfectly.
+A: Yes! Version 1.4.0+ supports all languages automatically. Whether your WhatsApp is in English, Arabic, French, Spanish, or any other language, the extension will work perfectly.
 
 **Q: What about community groups?**
 A: Yes, the extension now works with all types of groups including WhatsApp Community sub-groups and large groups.
+
+**Q: Do I need to refresh after installing?**
+A: No! Version 2.0.0 works immediately after installation. The extension automatically handles all setup.
+
+**Q: I'm getting connection errors, what should I do?**
+A: Version 2.0.0 has eliminated most connection issues. If you still encounter problems, the extension will show you a notification with a one-click refresh button.
 
 ---
 
 Made with ❤️ for WhatsApp group admins and members worldwide
 
-**Current Version: 1.4.0** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
+**Current Version: 2.0.0** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
