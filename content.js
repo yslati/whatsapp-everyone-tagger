@@ -466,6 +466,11 @@ async function clearChatInput(chatInput) {
 async function tagEveryone(clearExisting = false, speed = 'normal') {
     try {
         const delays = {
+            instant: {
+                afterTag: 20,
+                afterTab: 30,
+                afterSpace: 10
+            },
             fast: {
                 afterTag: 100,
                 afterTab: 80,
@@ -501,21 +506,23 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
         }
 
         chatInput.focus();
-        await sleep(100);
+        await sleep(speed === 'instant' ? 0 : 100);
+
         if (clearExisting) {
             await clearChatInput(chatInput);
-            await sleep(200);
+            await sleep(speed === 'instant' ? 0 : 200);
         } else {
             if (chatInput.textContent.length > 0 && !chatInput.textContent.endsWith(' ')) {
                 document.execCommand('insertText', false, ' ');
-                await sleep(50);
+                if (speed !== 'instant') await sleep(50);
             }
         }
 
         for (let i = 0; i < participants.length; i++) {
             const participant = participants[i];
             document.execCommand('insertText', false, `@${participant}`);
-            await sleep(currentDelays.afterTag);
+            if (currentDelays.afterTag > 0) await sleep(currentDelays.afterTag);
+            
             chatInput.dispatchEvent(new KeyboardEvent('keydown', {
                 key: 'Tab',
                 code: 'Tab',
