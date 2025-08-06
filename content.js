@@ -129,6 +129,21 @@ function stopTagging(reason = 'User interrupted') {
     }
 }
 
+function getCurrentChatId() {
+    const header = document.querySelector('#main header');
+    if (!header) return 'unknown';
+    
+    const titleElement = header.querySelector('[title]');
+    if (titleElement) {
+        const title = titleElement.getAttribute('title');
+        const cleanTitle = title.replace(/typing|online|last seen|recording/gi, '').trim();
+        return cleanTitle.substring(0, 50);
+    }
+    
+    const textContent = header.textContent || '';
+    return textContent.substring(0, 50);
+}
+
 function checkForGroupChat() {
     const participantsText = getParticipantsText();
     const wasGroupChat = isGroupChat;
@@ -146,6 +161,20 @@ function checkForGroupChat() {
 function isActualGroupChat(participantsText) {
     if (!participantsText) return false;
     if (!participantsText.includes(',')) return false;
+    
+    // Check if this is a typing indicator
+    const lowerText = participantsText.toLowerCase();
+    if (lowerText.includes('typing') || 
+        lowerText.includes('recording') || 
+        lowerText.includes('online')) {
+        // Try to get cached participants for this chat
+        const cached = sessionStorage.getItem('lastKnownParticipants_' + getCurrentChatId());
+        if (cached) {
+            participantsText = cached;
+        } else {
+            return false;
+        }
+    }
     
     const hasYouAtEnd = participantsText.trim().endsWith('You') || participantsText.trim().endsWith(', You');    
     const participants = participantsText.split(',').map(p => p.trim());
@@ -287,7 +316,7 @@ async function handleTagButtonClick() {
         </svg>
         <span style="margin-left: 5px;">Stop</span>
     `;
-    updateInlineButtonState(false); 
+    updateInlineButtonState(false);
     tagButton.style.background = '#f44336';
     
     const style = document.createElement('style');
@@ -698,6 +727,8 @@ function getParticipantsText() {
     const participantCandidates = [];
     const allElements = conversationHeader.querySelectorAll('*');
     
+    let lastKnownParticipants = null;
+    
     for (const element of allElements) {
         if (element.closest('[data-testid*="status"]') || 
             element.closest('[data-testid*="typing"]') ||
@@ -710,22 +741,31 @@ function getParticipantsText() {
         const title = element.getAttribute('title');
         const text = element.textContent;
         
-        if (title && isParticipantList(title)) {
+        const isTypingIndicator = (text && (
+            text.toLowerCase().includes('typing') ||
+            text.toLowerCase().includes('is typing') ||
+            text.toLowerCase().includes('are typing') ||
+            text.toLowerCase().includes('recording') ||
+            text.toLowerCase().includes('online') ||
+            text.toLowerCase().includes('last seen')
+        ));
+        
+        if (title && isParticipantList(title) && !isTypingIndicator) {
             const commaCount = (title.match(/,/g) || []).length;
             
-            if (commaCount >= 3) {
+            if (commaCount >= 1) {
                 participantCandidates.push({
                     content: title,
-                    score: calculateUniversalScore(title) + 100,
+                    score: calculateUniversalScore(title) + 200, // Higher priority for title
                     source: 'title'
                 });
             }
         }
         
-        if (text && text !== title && isParticipantList(text)) {
+        if (text && text !== title && isParticipantList(text) && !isTypingIndicator) {
             const commaCount = (text.match(/,/g) || []).length;
             
-            if (commaCount >= 3) {
+            if (commaCount >= 1) {
                 const words = text.split(/[\s,]+/);
                 const nonCommaWords = words.filter(w => w.trim() && !w.includes(','));
                 
@@ -744,12 +784,34 @@ function getParticipantsText() {
                 }
             }
         }
+        
+        const ariaLabel = element.getAttribute('aria-label');
+        if (ariaLabel && isParticipantList(ariaLabel) && !ariaLabel.toLowerCase().includes('typing')) {
+            const commaCount = (ariaLabel.match(/,/g) || []).length;
+            if (commaCount >= 1) {
+                participantCandidates.push({
+                    content: ariaLabel,
+                    score: calculateUniversalScore(ariaLabel) + 50,
+                    source: 'aria-label'
+                });
+            }
+        }
     }
     
-    if (participantCandidates.length === 0) return null;    
+    if (participantCandidates.length === 0) {
+        const cachedParticipants = sessionStorage.getItem('lastKnownParticipants_' + getCurrentChatId());
+        if (cachedParticipants) {
+            return cachedParticipants;
+        }
+        return null;
+    }
+    
     participantCandidates.sort((a, b) => b.score - a.score);
     
-    return participantCandidates[0].content;
+    const result = participantCandidates[0].content;
+    sessionStorage.setItem('lastKnownParticipants_' + getCurrentChatId(), result);
+    
+    return result;
 }
 
 function isParticipantList(text) {
@@ -762,19 +824,24 @@ function isParticipantList(text) {
     const excludePatterns = [
         /^\s*$/,                    // Empty or whitespace only
         /\.\.\./,                   // Loading indicators
-        /typing/i,
-        /online/i,
-        /last seen/i,
-        /ago/i,
-        /yesterday/i,
-        /today/i,
-        /connecting/i,
-        /searching/i,
-        /loading/i,
+        /\b(is\s+)?typing\b/i,      // "typing" or "is typing"
+        /\b(are\s+)?typing\b/i,     // "are typing"
+        /\brecording\b/i,           // Recording audio
+        /\bonline\b/i,              // Online status
+        /\blast seen\b/i,           // Last seen status
+        /\bago\b/i,                 // Time ago
+        /\byesterday\b/i,           // Yesterday
+        /\btoday\b/i,               // Today
+        /\bconnecting\b/i,          // Connecting
+        /\bsearching\b/i,           // Searching
+        /\bloading\b/i,             // Loading
         /^[,\s]+$/,                 // Only commas and spaces
         /^[\d\s,.-]+$/,             // Only digits, spaces, commas, dots, dashes
         /^\d{1,2}:\d{2}/,           // Time stamps
         /\d{4}-\d{2}-\d{2}/,        // Dates
+        /\bmessage\b/i,             // Message related text
+        /\bwrite\b/i,               // Writing related
+        /\bcomposing\b/i,           // Composing message
     ];
     
     return !excludePatterns.some(pattern => pattern.test(text));
