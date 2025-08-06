@@ -2,12 +2,15 @@ let tagButton = null;
 let isGroupChat = false;
 let showInlineButton = true;
 let isTaggingInProgress = false;
+let shouldStopTagging = false;
+let currentConversationId = null;
 
 function init() {
     
     chrome.storage.local.get(['showInlineButton'], function(result) {
         showInlineButton = result.showInlineButton !== false;
         checkForGroupChat();
+        updateConversationId();
         if (showInlineButton) {
             injectTagButton();
         }
@@ -15,6 +18,7 @@ function init() {
     
     const observer = new MutationObserver(() => {
         checkForGroupChat();
+        checkConversationChange();
         if (isGroupChat && !tagButton && showInlineButton) {
             injectTagButton();
         } else if ((!isGroupChat || !showInlineButton) && tagButton) {
@@ -26,6 +30,118 @@ function init() {
         childList: true,
         subtree: true
     });
+
+    setupFocusChangeDetection();
+}
+
+function updateConversationId() {
+    const header = document.querySelector('#main header') || 
+                  document.querySelector('header[data-testid*="conversation"]');
+    
+    if (header) {
+        const titleElement = header.querySelector('[title]');
+        const conversationTitle = titleElement ? titleElement.getAttribute('title') : '';
+        const participantsText = getParticipantsText();
+        
+        currentConversationId = `${conversationTitle}_${participantsText}`;
+    }
+}
+
+function checkConversationChange() {
+    const header = document.querySelector('#main header') || 
+                  document.querySelector('header[data-testid*="conversation"]');
+    
+    if (header && isTaggingInProgress) {
+        const titleElement = header.querySelector('[title]');
+        const conversationTitle = titleElement ? titleElement.getAttribute('title') : '';
+        const participantsText = getParticipantsText();
+        const newConversationId = `${conversationTitle}_${participantsText}`;
+        
+        if (currentConversationId && newConversationId !== currentConversationId) {
+            console.log('Conversation changed - stopping tagging');
+            stopTagging('Conversation changed');
+        }
+        
+        currentConversationId = newConversationId;
+    }
+}
+
+function setupFocusChangeDetection() {
+    document.addEventListener('click', function(e) {
+        if (isTaggingInProgress) {
+            const chatInput = findChatInput();
+            
+            if (chatInput && !chatInput.contains(e.target)) {
+                if (tagButton && !tagButton.contains(e.target)) {
+                    console.log('Focus changed - stopping tagging');
+                    stopTagging('Focus changed from chat input');
+                }
+            }
+        }
+    });
+
+    document.addEventListener('focusin', function(e) {
+        if (isTaggingInProgress) {
+            const chatInput = findChatInput();
+            
+            if (chatInput && !chatInput.contains(e.target)) {
+                if (tagButton && !tagButton.contains(e.target)) {
+                    console.log('Focus moved away - stopping tagging');
+                    stopTagging('Focus moved to another element');
+                }
+            }
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (isTaggingInProgress && e.key === 'Escape') {
+            console.log('Escape pressed - stopping tagging');
+            stopTagging('User pressed Escape');
+        }
+    });
+}
+
+function stopTagging(reason = 'User interrupted') {
+    if (isTaggingInProgress) {
+        shouldStopTagging = true;
+        isTaggingInProgress = false;
+        
+        notifyPopupTaggingState(false);
+        
+        if (tagButton) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M8.5,8.5L7,10L10.5,13.5L7,17L8.5,18.5L12,15L15.5,18.5L17,17L13.5,13.5L17,10L15.5,8.5L12,12L8.5,8.5Z"/>
+                </svg>
+                <span style="margin-left: 5px;">Stopped</span>
+            `;
+            tagButton.style.background = '#ff9800';
+            
+            setTimeout(() => {
+                if (tagButton) {
+                    tagButton.innerHTML = `<span style="margin-left: 4px; font-size: 12px;">@everyone</span>`;
+                    updateInlineButtonState(false);
+                }
+            }, 2000);
+        }
+        
+        console.log(`Tagging stopped: ${reason}`);
+    }
+}
+
+function getCurrentChatId() {
+    const header = document.querySelector('#main header');
+    if (!header) return 'unknown';
+    
+    const titleElement = header.querySelector('[title]');
+    if (titleElement) {
+        const title = titleElement.getAttribute('title');
+        const cleanTitle = title.replace(/typing|online|last seen|recording/gi, '').trim();
+        return cleanTitle.substring(0, 50);
+    }
+    
+    const textContent = header.textContent || '';
+    return textContent.substring(0, 50);
 }
 
 function checkForGroupChat() {
@@ -45,6 +161,20 @@ function checkForGroupChat() {
 function isActualGroupChat(participantsText) {
     if (!participantsText) return false;
     if (!participantsText.includes(',')) return false;
+    
+    // Check if this is a typing indicator
+    const lowerText = participantsText.toLowerCase();
+    if (lowerText.includes('typing') || 
+        lowerText.includes('recording') || 
+        lowerText.includes('online')) {
+        // Try to get cached participants for this chat
+        const cached = sessionStorage.getItem('lastKnownParticipants_' + getCurrentChatId());
+        if (cached) {
+            participantsText = cached;
+        } else {
+            return false;
+        }
+    }
     
     const hasYouAtEnd = participantsText.trim().endsWith('You') || participantsText.trim().endsWith(', You');    
     const participants = participantsText.split(',').map(p => p.trim());
@@ -148,6 +278,8 @@ function injectTagButton() {
         e.stopPropagation();
         if (!isTaggingInProgress) {
             await handleTagButtonClick();
+        } else {
+            stopTagging('User clicked button to stop');
         }
     };
     
@@ -173,16 +305,19 @@ async function handleTagButtonClick() {
     if (!tagButton || isTaggingInProgress) return;
     
     isTaggingInProgress = true;
+    shouldStopTagging = false;
     notifyPopupTaggingState(true);
+    updateConversationId();
     
     const originalText = tagButton.innerHTML;
     tagButton.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
             <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
         </svg>
-        <span style="margin-left: 5px;">Tagging...</span>
+        <span style="margin-left: 5px;">Stop</span>
     `;
-    updateInlineButtonState(true);
+    updateInlineButtonState(false);
+    tagButton.style.background = '#f44336';
     
     const style = document.createElement('style');
     style.textContent = `
@@ -198,21 +333,24 @@ async function handleTagButtonClick() {
         const speed = result.tagSpeed || 'normal';
         const clearExisting = result.clearExisting === true;
         
-        await tagEveryone(clearExisting, speed);
+        const success = await tagEveryone(clearExisting, speed);
         
-        tagButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
-            </svg>
-            <span style="margin-left: 5px;">Done!</span>
-        `;
-        tagButton.style.background = '#06d755';
+        if (success && !shouldStopTagging) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
+                </svg>
+                <span style="margin-left: 5px;">Done!</span>
+            `;
+            tagButton.style.background = '#06d755';
+        }
         
         setTimeout(() => {
             if (tagButton) {
                 tagButton.innerHTML = originalText;
                 updateInlineButtonState(false);
                 isTaggingInProgress = false;
+                shouldStopTagging = false;
                 notifyPopupTaggingState(false);
             }
         }, 2000);
@@ -220,19 +358,22 @@ async function handleTagButtonClick() {
     } catch (error) {
         console.error('Error tagging everyone:', error);
         
-        tagButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
-            </svg>
-            <span style="margin-left: 5px;">Error</span>
-        `;
-        tagButton.style.background = '#f44336';
+        if (!shouldStopTagging) {
+            tagButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                </svg>
+                <span style="margin-left: 5px;">Error</span>
+            `;
+            tagButton.style.background = '#f44336';
+        }
         
         setTimeout(() => {
             if (tagButton) {
                 tagButton.innerHTML = originalText;
                 updateInlineButtonState(false);
                 isTaggingInProgress = false;
+                shouldStopTagging = false;
                 notifyPopupTaggingState(false);
             }
         }, 3000);
@@ -265,26 +406,37 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         }
         
         isTaggingInProgress = true;
-        updateInlineButtonState(true, `
+        shouldStopTagging = false;
+        updateConversationId();
+        
+        updateInlineButtonState(false, `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;">
                 <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
             </svg>
-            <span style="margin-left: 5px;">Tagging...</span>
+            <span style="margin-left: 5px;">Stop</span>
         `);
+        
+        if (tagButton) {
+            tagButton.style.background = '#f44336';
+        }
         
         tagEveryone(
             request.clearExisting !== undefined ? request.clearExisting : false,
             request.speed || 'normal'
         )
-            .then(() => {
-                updateInlineButtonState(false, `<span style="margin-left: 4px; font-size: 12px;">@everyone</span>`);
+            .then((success) => {
+                if (!shouldStopTagging) {
+                    updateInlineButtonState(false, `<span style="margin-left: 4px; font-size: 12px;">@everyone</span>`);
+                }
                 isTaggingInProgress = false;
-                sendResponse({ success: true });
+                shouldStopTagging = false;
+                sendResponse({ success: success });
             })
             .catch(error => {
                 console.error('Error tagging everyone:', error);
                 updateInlineButtonState(false, `<span style="margin-left: 4px; font-size: 12px;">@everyone</span>`);
                 isTaggingInProgress = false;
+                shouldStopTagging = false;
                 sendResponse({ success: false, error: error.message });
             });
 
@@ -466,6 +618,11 @@ async function clearChatInput(chatInput) {
 async function tagEveryone(clearExisting = false, speed = 'normal') {
     try {
         const delays = {
+            instant: {
+                afterTag: 20,
+                afterTab: 30,
+                afterSpace: 10
+            },
             fast: {
                 afterTag: 100,
                 afterTab: 80,
@@ -501,21 +658,33 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
         }
 
         chatInput.focus();
-        await sleep(100);
+        await sleep(speed === 'instant' ? 0 : 100);
+
         if (clearExisting) {
             await clearChatInput(chatInput);
-            await sleep(200);
+            await sleep(speed === 'instant' ? 0 : 200);
         } else {
             if (chatInput.textContent.length > 0 && !chatInput.textContent.endsWith(' ')) {
                 document.execCommand('insertText', false, ' ');
-                await sleep(50);
+                if (speed !== 'instant') await sleep(50);
             }
         }
 
         for (let i = 0; i < participants.length; i++) {
+            if (shouldStopTagging) {
+                console.log('Tagging interrupted by user');
+                return false;
+            }
+
             const participant = participants[i];
             document.execCommand('insertText', false, `@${participant}`);
-            await sleep(currentDelays.afterTag);
+            if (currentDelays.afterTag > 0) await sleep(currentDelays.afterTag);
+            
+            if (shouldStopTagging) {
+                console.log('Tagging interrupted by user');
+                return false;
+            }
+            
             chatInput.dispatchEvent(new KeyboardEvent('keydown', {
                 key: 'Tab',
                 code: 'Tab',
@@ -526,6 +695,12 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
             }));
 
             await sleep(currentDelays.afterTab);
+            
+            if (shouldStopTagging) {
+                console.log('Tagging interrupted by user');
+                return false;
+            }
+            
             document.execCommand('insertText', false, ' ');
             await sleep(currentDelays.afterSpace);
         }
@@ -552,6 +727,8 @@ function getParticipantsText() {
     const participantCandidates = [];
     const allElements = conversationHeader.querySelectorAll('*');
     
+    let lastKnownParticipants = null;
+    
     for (const element of allElements) {
         if (element.closest('[data-testid*="status"]') || 
             element.closest('[data-testid*="typing"]') ||
@@ -564,22 +741,31 @@ function getParticipantsText() {
         const title = element.getAttribute('title');
         const text = element.textContent;
         
-        if (title && isParticipantList(title)) {
+        const isTypingIndicator = (text && (
+            text.toLowerCase().includes('typing') ||
+            text.toLowerCase().includes('is typing') ||
+            text.toLowerCase().includes('are typing') ||
+            text.toLowerCase().includes('recording') ||
+            text.toLowerCase().includes('online') ||
+            text.toLowerCase().includes('last seen')
+        ));
+        
+        if (title && isParticipantList(title) && !isTypingIndicator) {
             const commaCount = (title.match(/,/g) || []).length;
             
-            if (commaCount >= 3) {
+            if (commaCount >= 1) {
                 participantCandidates.push({
                     content: title,
-                    score: calculateUniversalScore(title) + 100,
+                    score: calculateUniversalScore(title) + 200, // Higher priority for title
                     source: 'title'
                 });
             }
         }
         
-        if (text && text !== title && isParticipantList(text)) {
+        if (text && text !== title && isParticipantList(text) && !isTypingIndicator) {
             const commaCount = (text.match(/,/g) || []).length;
             
-            if (commaCount >= 3) {
+            if (commaCount >= 1) {
                 const words = text.split(/[\s,]+/);
                 const nonCommaWords = words.filter(w => w.trim() && !w.includes(','));
                 
@@ -598,12 +784,34 @@ function getParticipantsText() {
                 }
             }
         }
+        
+        const ariaLabel = element.getAttribute('aria-label');
+        if (ariaLabel && isParticipantList(ariaLabel) && !ariaLabel.toLowerCase().includes('typing')) {
+            const commaCount = (ariaLabel.match(/,/g) || []).length;
+            if (commaCount >= 1) {
+                participantCandidates.push({
+                    content: ariaLabel,
+                    score: calculateUniversalScore(ariaLabel) + 50,
+                    source: 'aria-label'
+                });
+            }
+        }
     }
     
-    if (participantCandidates.length === 0) return null;    
+    if (participantCandidates.length === 0) {
+        const cachedParticipants = sessionStorage.getItem('lastKnownParticipants_' + getCurrentChatId());
+        if (cachedParticipants) {
+            return cachedParticipants;
+        }
+        return null;
+    }
+    
     participantCandidates.sort((a, b) => b.score - a.score);
     
-    return participantCandidates[0].content;
+    const result = participantCandidates[0].content;
+    sessionStorage.setItem('lastKnownParticipants_' + getCurrentChatId(), result);
+    
+    return result;
 }
 
 function isParticipantList(text) {
@@ -616,19 +824,24 @@ function isParticipantList(text) {
     const excludePatterns = [
         /^\s*$/,                    // Empty or whitespace only
         /\.\.\./,                   // Loading indicators
-        /typing/i,
-        /online/i,
-        /last seen/i,
-        /ago/i,
-        /yesterday/i,
-        /today/i,
-        /connecting/i,
-        /searching/i,
-        /loading/i,
+        /\b(is\s+)?typing\b/i,      // "typing" or "is typing"
+        /\b(are\s+)?typing\b/i,     // "are typing"
+        /\brecording\b/i,           // Recording audio
+        /\bonline\b/i,              // Online status
+        /\blast seen\b/i,           // Last seen status
+        /\bago\b/i,                 // Time ago
+        /\byesterday\b/i,           // Yesterday
+        /\btoday\b/i,               // Today
+        /\bconnecting\b/i,          // Connecting
+        /\bsearching\b/i,           // Searching
+        /\bloading\b/i,             // Loading
         /^[,\s]+$/,                 // Only commas and spaces
         /^[\d\s,.-]+$/,             // Only digits, spaces, commas, dots, dashes
         /^\d{1,2}:\d{2}/,           // Time stamps
         /\d{4}-\d{2}-\d{2}/,        // Dates
+        /\bmessage\b/i,             // Message related text
+        /\bwrite\b/i,               // Writing related
+        /\bcomposing\b/i,           // Composing message
     ];
     
     return !excludePatterns.some(pattern => pattern.test(text));

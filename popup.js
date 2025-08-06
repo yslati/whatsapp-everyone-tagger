@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let isTaggingInProgress = false;
 
     const speedDescriptions = {
+        'instant': 'No delay between tags',
         'fast': 'Quick tagging, may miss some tags',
         'normal': 'Balanced speed for most groups',
         'slow': 'Slower but more reliable'
@@ -54,9 +55,39 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.local.set({ announcementHidden: true });
     });
 
+    function showInstantWarning() {
+        if (speedSelect.value === 'instant') {
+            let warning = document.getElementById('instant-warning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'instant-warning';
+                warning.style.cssText = `
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    color: #856404;
+                    padding: 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    margin-top: 5px;
+                    line-height: 1.3;
+                `;
+                warning.innerHTML = `
+                    <strong>⚠️ Warning:</strong> Instant mode may cause some tags to fail or be missed. 
+                    Use only for small groups or when speed is critical.
+                `;
+                speedSelect.parentNode.appendChild(warning);
+            }
+            warning.style.display = 'block';
+        } else {
+            const warning = document.getElementById('instant-warning');
+            if (warning) warning.style.display = 'none';
+        }
+    }
+
     speedSelect.addEventListener('change', function() {
         speedDescription.textContent = speedDescriptions[speedSelect.value];
         chrome.storage.local.set({ tagSpeed: speedSelect.value });
+        showInstantWarning();
     });
 
     clearCheckbox.addEventListener('change', function() {

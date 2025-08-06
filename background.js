@@ -1,4 +1,4 @@
-const welcomePageURL = 'https://slati.me/whatsapp-everyone-tagger';
+const welcomePageURL = 'https://whatsapp-tagger-welcome.vercel.app/';
 
 chrome.runtime.onInstalled.addListener(function(details) {
     if (details.reason === 'install') {
