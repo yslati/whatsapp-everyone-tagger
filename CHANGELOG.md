@@ -5,6 +5,43 @@ All notable changes to WhatsApp Everyone Tagger will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-08-07
+
+### Added
+- **Instant tagging speed option** - New "Instant" mode for extremely fast tagging
+- **Auto-stop tagging system** - Automatically stops tagging when user clicks away or switches chat
+- **Stop button during tagging** - Click the tagging button again to interrupt the process
+- **Escape key cancellation** - Press Escape to cancel tagging operation
+- **Visual feedback for stopped operations** - Clear indication when tagging is interrupted
+- **Conversation change detection** - Monitors chat header to detect when user switches conversations
+- **Typing indicator fallback** - Uses cached participant data when typing indicators block detection
+
+### Fixed
+- **Major fix**: Extension no longer fails when someone is typing in the group
+- **Major fix**: Prevents accidental cross-chat tagging when switching conversations
+- Fixed participant detection being blocked by typing indicators ("is typing", "recording", etc.)
+- Enhanced typing detection patterns for better reliability
+
+### Changed
+- **Speed options expanded** - Now includes Instant, Fast, Normal, and Slow options
+- **Improved safety** - Warning message for Instant mode about potential risks
+- **Better user control** - Multiple ways to stop tagging operation (click, escape, focus change)
+- Enhanced error handling for conversation switches during tagging
+
+### Technical Improvements
+- Implemented conversation monitoring via header change detection
+- Added participant data caching to handle temporary UI blockages
+- Enhanced keyboard event handling for cancellation
+- Improved state management for tagging interruption
+- Better detection of typing indicators across different languages
+
+### User Experience
+- **Safer tagging** - Automatic prevention of accidental cross-chat tagging
+- **More control** - Easy cancellation of tagging operations
+- **Better feedback** - Clear visual indicators for all tagging states
+- **Faster option** - Instant mode for users who need maximum speed
+- **More reliable** - Works even when group members are actively typing
+
 ## [2.0.0] - 2025-07-06
 
 ### Added

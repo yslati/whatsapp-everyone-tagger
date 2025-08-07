@@ -10,10 +10,13 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 - ✅ **Smart Group Detection** - Automatically detects group chats vs individual chats
 - ✅ **International Phone Support** - Properly handles international numbers like +212 xxx-xxx-xxx
 - ✅ **Inline "@everyone" button** - Appears directly next to the send button in group chats
-- ✅ **Speed control** - Choose between Fast, Normal, or Slow tagging speeds
+- ✅ **Advanced speed control** - Choose between Instant, Fast, Normal, or Slow tagging speeds
+- ✅ **Smart auto-stop system** - Automatically stops tagging when switching chats or conversations
+- ✅ **Multiple cancellation methods** - Stop tagging with button click, Escape key, or focus change
 - ✅ **Smart text handling** - Option to clear existing text or append the tags
 - ✅ **Robust participant detection** - Works with community groups, large groups, and all group types
 - ✅ **Advanced filtering** - Automatically excludes group names and invalid entries
+- ✅ **Typing indicator resilience** - Works even when someone is actively typing in the group
 - ✅ **Saves preferences** - Remembers your settings (speed, button visibility, text clearing)
 - ✅ **Works with latest WhatsApp Web** - Compatible with all WhatsApp Web updates
 - ✅ **Seamless installation** - Auto-setup with welcome page and instant activation
@@ -47,7 +50,9 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 2. Open a group chat where you want to tag everyone
 3. Look for the **"@everyone"** button that appears above the message input area
 4. Click the button and wait for all members to be tagged
-5. Add your message and send!
+5. **New in v2.1**: The tagging will automatically stop if you switch conversations or click away
+6. **New in v2.1**: Click the button again during tagging to stop, or press Escape to cancel
+7. Add your message and send!
 
 ### Method 2: Extension Popup
 
@@ -57,7 +62,7 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 4. Choose your preferences:
    - **Clear existing text**: Whether to clear the message input before tagging (unchecked by default)
    - **Show "@everyone" button**: Toggle the inline button visibility
-   - **Speed**: Select Fast, Normal (recommended), or Slow tagging speed
+   - **Speed**: Select Instant, Fast, Normal (recommended), or Slow tagging speed
 5. Click the "Tag Everyone in Group" button
 6. All group members will be tagged in the input field
 7. Add your message if needed and send!
@@ -65,11 +70,24 @@ A Chrome extension that allows you to tag all members in a WhatsApp group chat w
 ### Settings & Preferences
 
 - **Clear existing text**: Disabled by default - tags will be appended to existing text
-- **Speed Options**:
+- **Speed Options** (New in v2.1):
+  - **Instant**: Lightning fast tagging with warning about potential risks (new in v2.1)
   - **Fast**: Quick tagging, best for smaller groups (may be less reliable)
   - **Normal**: Balanced speed, recommended for most use cases
   - **Slow**: More reliable for large groups or slower connections
 - **Inline Button**: Show/hide the "@everyone" button next to the send button
+
+### Safety Features (New in v2.1)
+
+- **Auto-stop protection**: Tagging automatically stops when you:
+  - Click away from the current chat
+  - Switch to a different conversation
+  - Navigate to another tab or window
+- **Manual cancellation**: Stop tagging by:
+  - Clicking the tagging button again (turns into "Stop" button)
+  - Pressing the Escape key
+  - Clicking away from the chat
+- **Visual feedback**: Clear indicators show when tagging is stopped or interrupted
 
 ## Group Type Compatibility
 
@@ -80,6 +98,7 @@ Works with **all types** of WhatsApp groups:
 - ✅ **Community Groups** - WhatsApp Community sub-groups
 - ✅ **International Groups** - Mixed phone numbers and names
 - ✅ **Multilingual Groups** - Groups with members from different countries
+- ✅ **Active Groups** - Works even when members are typing or recording (new in v2.1)
 
 ## Screenshots
 
@@ -93,6 +112,20 @@ Works with **all types** of WhatsApp groups:
 - **Automatic setup**: Extension automatically injects into existing WhatsApp Web tabs
 - **Smart detection**: If refresh is needed, you'll see a notification with one-click fix
 - **Welcome page**: First-time users get a helpful setup guide
+
+### New in v2.1.0: Enhanced Reliability
+
+### Typing indicators blocking extension (Fixed in v2.1.0!)
+**Fixed in v2.1.0!** The extension now uses cached participant data when typing indicators appear, ensuring it works even when someone is actively typing.
+
+### Accidental cross-chat tagging (Fixed in v2.1.0!)
+**Fixed in v2.1.0!** The extension now automatically stops tagging when you switch conversations, preventing accidental tagging in the wrong chat.
+
+### Extension seems stuck or unresponsive (Fixed in v2.1.0!)
+**New in v2.1.0!** Multiple ways to cancel tagging:
+- Click the tagging button again to stop
+- Press Escape key to cancel
+- Simply click away or switch chats
 
 ### Legacy Issues (Mostly Fixed)
 
@@ -118,6 +151,7 @@ The extension uses advanced clearing methods specifically designed for WhatsApp'
 
 ### Tagging seems slow or incomplete
 - Try using "Slow" speed setting for better reliability
+- For maximum speed, use "Instant" mode (with caution as noted in the warning)
 - Ensure you have a stable internet connection
 - For very large groups (50+ members), "Slow" speed is recommended
 
@@ -151,7 +185,15 @@ See [PRIVACY.md](PRIVACY.md) for complete privacy policy.
 
 ## Recent Updates
 
-### Version 2.0.0 (Latest) - Major Installation & Reliability Update
+### Version 2.1.0 (Latest) - Enhanced Safety & Speed Control
+- 🚀 **Instant tagging mode** - New ultra-fast option with appropriate warnings
+- 🛡️ **Auto-stop protection** - Prevents accidental cross-chat tagging
+- ⏹️ **Multiple cancellation methods** - Stop button, Escape key, and focus change detection
+- 🔄 **Conversation change detection** - Automatically stops when switching chats
+- 📝 **Typing indicator resilience** - Works even when someone is actively typing
+- ⚡ **Better user control** - Enhanced feedback and safety features
+
+### Version 2.0.0 - Major Installation & Reliability Update
 - 🚀 **Seamless installation** - Works immediately after installation, no refresh needed
 - 🔧 **Fixed connection errors** - Eliminated "Could not establish connection" issues
 - ✨ **Welcome page integration** - Helpful setup guide for new users
@@ -207,7 +249,7 @@ A: No, this extension only works in group chats where you need to tag multiple p
 A: Currently, the extension tags all group members. Individual member selection is a planned feature for future updates.
 
 **Q: Is this safe to use?**
-A: Yes, the extension is completely local and doesn't send any data externally. It only simulates typing in the WhatsApp Web interface.
+A: Yes, the extension is completely local and doesn't send any data externally. It only simulates typing in the WhatsApp Web interface. Version 2.1.0 adds additional safety features to prevent accidental cross-chat tagging.
 
 **Q: Does it work in my language?**
 A: Yes! Version 1.4.0+ supports all languages automatically. Whether your WhatsApp is in English, Arabic, French, Spanish, or any other language, the extension will work perfectly.
@@ -221,8 +263,21 @@ A: No! Version 2.0.0 works immediately after installation. The extension automat
 **Q: I'm getting connection errors, what should I do?**
 A: Version 2.0.0 has eliminated most connection issues. If you still encounter problems, the extension will show you a notification with a one-click refresh button.
 
+**Q: What if someone is typing while I try to tag everyone?**
+A: New in v2.1.0! The extension now works even when someone is actively typing in the group. It uses cached participant data to overcome typing indicator interference.
+
+**Q: Can I cancel tagging once it starts?**
+A: Yes! New in v2.1.0, you can cancel tagging by clicking the button again, pressing Escape, or simply clicking away from the chat.
+
+**Q: What's the difference between the speed options?**
+A: 
+- **Instant**: Ultra-fast with warning about potential risks (new in v2.1.0)
+- **Fast**: Quick tagging, best for smaller groups
+- **Normal**: Balanced speed, recommended for most groups
+- **Slow**: More reliable for large groups or slower connections
+
 ---
 
 Made with ❤️ for WhatsApp group admins and members worldwide
 
-**Current Version: 2.0.0** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
+**Current Version: 2.1.0** - [Download from Chrome Web Store](https://chromewebstore.google.com/detail/afncdbgiiinphhonknflambmlobgpdlo?utm_source=item-share-cb)
