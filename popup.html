@@ -5,191 +5,457 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp Everyone Tagger</title>
   <style>
+    :root {
+      --whatsapp-primary: #00a884;
+      --whatsapp-primary-dark: #075e54;
+      --whatsapp-secondary: #128c7e;
+      --whatsapp-light: #dcf8c6;
+      --surface: #ffffff;
+      --surface-variant: #f8fafc;
+      --surface-container: #f1f5f9;
+      --outline: #e2e8f0;
+      --outline-variant: #cbd5e1;
+      --on-surface: #0f172a;
+      --on-surface-variant: #64748b;
+      --primary-container: #e6fffa;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      width: 320px;
-      padding: 15px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 360px;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-variant) 100%);
+      color: var(--on-surface);
+      line-height: 1.6;
+    }
+    
+    .container {
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-block: 20px 8px;
     }
     
     h1 {
-      font-size: 18px;
-      color: #128C7E;
-      text-align: center;
-      margin-bottom: 10px;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--whatsapp-primary);
+      margin: 0;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     .new-feature {
-      background: linear-gradient(135deg, #00a884, #128C7E);
+      background: linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%);
       color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin-bottom: 12px;
+      padding: 16px;
+      border-radius: var(--radius-md);
       text-align: center;
-      font-size: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 13px;
+      box-shadow: var(--shadow-md);
       position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .new-feature strong {
       display: block;
-      font-size: 13px;
-      margin-bottom: 3px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
     }
     
     .close-btn {
       position: absolute;
-      top: 2px;
-      right: 6px;
-      background: none;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.1);
       border: none;
       color: white;
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
-      padding: 2px 4px;
-      line-height: 1;
+      padding: 4px;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
     }
     
     .close-btn:hover {
-      background-color: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
     }
     
-    p {
-      font-size: 14px;
-      line-height: 1.4;
+    .status-container {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border: 1px solid var(--outline);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .current-page {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-bottom: 12px;
+    }
+    
+    .current-page span {
+      font-weight: 500;
+      color: var(--whatsapp-primary);
     }
     
     .status {
-      padding: 10px;
-      border-radius: 5px;
-      background-color: #DCF8C6;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-container);
       margin-top: 10px;
       text-align: center;
-      font-weight: bold;
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--whatsapp-primary-dark);
+      border: 1px solid rgba(0, 168, 132, 0.2);
     }
     
     .tag-button {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
-      padding: 12px;
-      background-color: #128C7E;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%);
       color: white;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      font-weight: bold;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
-      margin: 15px 0;
-      transition: background-color 0.3s;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tag-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .tag-button:hover::before {
+      left: 100%;
     }
     
     .tag-button:hover {
-      background-color: #075E54;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .tag-button:active {
+      transform: translateY(0);
     }
     
     .tag-button:disabled {
-      background-color: #cccccc;
+      background: var(--outline-variant);
+      color: var(--on-surface-variant);
       cursor: not-allowed;
+      transform: none;
+      box-shadow: var(--shadow-sm);
     }
     
-    .footer {
-      margin-top: 15px;
+    .tag-button:disabled::before {
+      display: none;
+    }
+    
+    .options-section {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--outline);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--outline);
+    }
+    
+    .option-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    
+    .option-item label {
+      font-size: 14px;
+      color: var(--on-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    
+    .checkbox-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .checkbox-wrapper input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--outline-variant);
+      border-radius: 4px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .checkbox-wrapper input[type="checkbox"]:checked {
+      background: var(--whatsapp-primary);
+      border-color: var(--whatsapp-primary);
+    }
+    
+    .checkbox-wrapper input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
       font-size: 12px;
-      color: #999;
-      text-align: center;
-    }
-    
-    .option-container {
-      margin-top: 10px;
+      font-weight: bold;
     }
     
     .speed-control {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #f0f0f0;
-      border-radius: 5px;
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--outline);
+      box-shadow: var(--shadow-sm);
     }
     
     .speed-control label {
       display: block;
       font-size: 14px;
-      color: #075E54;
-      margin-bottom: 5px;
+      font-weight: 500;
+      color: var(--on-surface);
+      margin-bottom: 12px;
     }
     
     .speed-control select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
+  width: 100%;
+  padding: 9px 32px 9px 10px;
+  border: 2px solid var(--outline);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='currentColor' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'><polyline points='1.5 2 6 6 10.5 2'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+    
+    .speed-control select:focus {
+      outline: none;
+      border-color: var(--whatsapp-primary);
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.1);
     }
     
     .speed-value {
       font-size: 12px;
-      color: #666;
-      margin-top: 5px;
+      color: var(--on-surface-variant);
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--surface-variant);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--whatsapp-primary);
     }
+    
+    .instructions {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--outline);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .instructions strong {
+      color: var(--whatsapp-primary);
+      font-weight: 600;
+      font-size: 15px;
+    }
+    
+    .instructions ol {
+      margin: 12px 0 0 0;
+      padding-left: 20px;
+    }
+    
+    .instructions li {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      padding-block: 10px 16px;
+      background: linear-gradient(135deg, var(--surface-variant) 0%, var(--surface) 100%);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .container > * {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    
+    .container > *:nth-child(1) { animation-delay: 0.1s; }
+    .container > *:nth-child(2) { animation-delay: 0.2s; }
+    .container > *:nth-child(3) { animation-delay: 0.3s; }
+    .container > *:nth-child(4) { animation-delay: 0.4s; }
+    .container > *:nth-child(5) { animation-delay: 0.5s; }
   </style>
 </head>
 <body>
-  <h1>WhatsApp Everyone Tagger</h1>
-  
-  <div class="new-feature" id="announcement" style="display: none;">
-    <button class="close-btn" id="close-announcement">x</button>
-    <strong>New: Inline Button!</strong>
-    Look for the "@everyone" button next to the send button in group chats
-  </div>
-  
-  <p>Currently on: <span id="current-page">Checking...</span></p>
-  
-  <button id="tag-everyone-btn" class="tag-button" disabled>Tag Everyone in Group</button>
-  
-  <div class="status" id="status-message">
-    Please open a WhatsApp group chat
-  </div>
-
-  <div class="option-container">
-    <label style="font-size: 14px; color: #075E54; margin-bottom: 8px; display: block;">
-      <input type="checkbox" id="clear-input-checkbox">
-      Clear existing text before tagging
-    </label>
+  <div class="container">
+    <div class="header">
+      <h1>WhatsApp Everyone Tagger</h1>
+    </div>
     
-    <label style="font-size: 14px; color: #075E54; display: block;">
-      <input type="checkbox" id="show-inline-button" checked>
-      Show "@everyone" button
-    </label>
-  </div>
-  
-  <div class="speed-control">
-    <label for="speed-select">Tagging Speed:</label>
-    <select id="speed-select">
-      <option value="instant">Instant</option>
-      <option value="fast">Fast</option>
-      <option value="normal" selected>Normal (Recommended)</option>
-      <option value="slow">Slow</option>
-    </select>
-    <div class="speed-value" id="speed-description">Balanced speed for most groups</div>
-  </div>
-  
-  <p>
-    <strong>How to use:</strong>
-    <ol>
-      <li>Open a WhatsApp group chat</li>
-      <li>Look for the "@everyone" button next to send, OR</li>
-      <li>Click the "Tag Everyone in Group" button above</li>
-      <li>Wait for the extension to @everyone group members</li>
-    </ol>
-  </p>
-  
-  <div class="footer">
-    v2.1.0 - FREE PALESTINE 🇵🇸
+    <div class="new-feature" id="announcement" style="display: none;">
+      <button class="close-btn" id="close-announcement">×</button>
+      <strong>New: Inline Button!</strong>
+      Look for the "@everyone" button next to the send button in group chats
+    </div>
+    
+    <div class="status-container">
+      <div class="current-page">Currently on: <span id="current-page">Checking...</span></div>
+      
+      <button id="tag-everyone-btn" class="tag-button" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        </svg>
+        Tag Everyone in Group
+      </button>
+      
+      <div class="status" id="status-message">
+        Please open a WhatsApp group chat
+      </div>
+    </div>
+
+    <div class="options-section">
+      <div class="section-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+        </svg>
+        Options
+      </div>
+      
+      <div class="option-item">
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="clear-input-checkbox">
+        </div>
+        <label for="clear-input-checkbox">Clear existing text before tagging</label>
+      </div>
+      
+      <div class="option-item">
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="show-inline-button" checked>
+        </div>
+        <label for="show-inline-button">Show "@everyone" button</label>
+      </div>
+    </div>
+    
+    <div class="speed-control">
+      <label for="speed-select">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px; vertical-align: middle;">
+          <path d="M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.44z"/>
+          <path d="M10.59 15.41a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"/>
+        </svg>
+        Tagging Speed
+      </label>
+      <select id="speed-select">
+        <option value="instant">⚡ Instant</option>
+        <option value="fast">🚀 Fast</option>
+        <option value="normal" selected>⚖️ Normal (Recommended)</option>
+        <option value="slow">🐌 Slow</option>
+      </select>
+      <div class="speed-value" id="speed-description">Balanced speed for most groups</div>
+    </div>
+    
+    <div class="instructions">
+      <strong>How to use:</strong>
+      <ol>
+        <li>Open a WhatsApp group chat</li>
+        <li>Look for the "@everyone" button next to send, OR</li>
+        <li>Click the "Tag Everyone in Group" button above</li>
+        <li>Wait for the extension to @everyone group members</li>
+      </ol>
+    </div>
+    
+    <div class="footer">
+      v2.2.0 - FREE PALESTINE 🇵🇸
+    </div>
   </div>
   
   <script src="popup.js"></script>
