@@ -160,7 +160,7 @@ function checkForGroupChat() {
 
 function isActualGroupChat(participantsText) {
     if (!participantsText) return false;
-    if (!/[，、,،]/.test(participantsText)) return false;
+    if (!/[，、,،؛·]/.test(participantsText)) return false;
 
     // Check if this is a typing indicator
     const lowerText = participantsText.toLowerCase();
@@ -178,7 +178,7 @@ function isActualGroupChat(participantsText) {
 
     const youRegex = /(You|toi|vous|tú|tu|du|sie|Bạn|أنت|ты|вы|당신|あなた|คุณ|आप|તમે|你|您|你们|你們)$/i;
     const hasYouAtEnd = youRegex.test(participantsText.trim());
-    const participants = participantsText.split(/[，、,،]/).map(p => p.trim());
+    const participants = participantsText.split(/[，、,،؛·]/).map(p => p.trim());
     const nonYouParticipants = participants.filter(p => p && !youRegex.test(p));
     const containsPrivacyText = participantsText.toLowerCase().includes('privacy') ||
                               participantsText.toLowerCase().includes('settings') ||
@@ -752,7 +752,7 @@ function getParticipantsText() {
         ));
         
         if (title && isParticipantList(title) && !isTypingIndicator) {
-            const commaCount = (title.match(/[，、,،]/g) || []).length;
+            const commaCount = (title.match(/[，、,،؛·]/g) || []).length;
             
             if (commaCount >= 1) {
                 participantCandidates.push({
@@ -764,11 +764,11 @@ function getParticipantsText() {
         }
         
         if (text && text !== title && isParticipantList(text) && !isTypingIndicator) {
-            const commaCount = (text.match(/[，、,،]/g) || []).length;
+            const commaCount = (text.match(/[，、,،؛·]/g) || []).length;
 
             if (commaCount >= 1) {
                 const words = text.split(/[\s,，、،]+/);
-                const nonCommaWords = words.filter(w => w.trim() && !/[，、,،]/.test(w));
+                const nonCommaWords = words.filter(w => w.trim() && !/[，、,،؛·]/.test(w));
 
                 if (nonCommaWords.length > 0 && nonCommaWords[0].length > 10) {
                     participantCandidates.push({
@@ -788,7 +788,7 @@ function getParticipantsText() {
         
         const ariaLabel = element.getAttribute('aria-label');
         if (ariaLabel && isParticipantList(ariaLabel) && !ariaLabel.toLowerCase().includes('typing')) {
-            const commaCount = (ariaLabel.match(/[，、,،]/g) || []).length;
+            const commaCount = (ariaLabel.match(/[，、,،؛·]/g) || []).length;
             if (commaCount >= 1) {
                 participantCandidates.push({
                     content: ariaLabel,
@@ -817,9 +817,9 @@ function getParticipantsText() {
 
 function isParticipantList(text) {
     if (!text || typeof text !== 'string' || text.length < 3) return false;
-    if (!/[，、,،]/.test(text)) return false;
+    if (!/[，、,،؛·]/.test(text)) return false;
 
-    const commaCount = (text.match(/[，、,،]/g) || []).length;
+    const commaCount = (text.match(/[，、,،؛·]/g) || []).length;
     if (commaCount < 1 || commaCount > 1000) return false;
     
     const excludePatterns = [
@@ -850,7 +850,7 @@ function isParticipantList(text) {
 
 function calculateUniversalScore(text) {
     let score = 0;
-    const commaCount = (text.match(/[，、,،]/g) || []).length;
+    const commaCount = (text.match(/[，、,،؛·]/g) || []).length;
     score += commaCount * 15;
     
     const phonePatterns = [
@@ -872,7 +872,7 @@ function calculateUniversalScore(text) {
         score += 20;
     }
     
-    const parts = text.split(/[，、,،]/).map(p => p.trim());
+    const parts = text.split(/[，、,،؛·]/).map(p => p.trim());
     if (parts.length >= 2) {
         const lastPart = parts[parts.length - 1];
         const isLikelyCurrentUser = 
@@ -896,7 +896,7 @@ function calculateUniversalScore(text) {
 function parseParticipants(text) {
     if (!text) return [];
 
-    let participants = text.split(/[，、,،]/).map(p => p.trim()).filter(p => p.length > 0);
+    let participants = text.split(/[，、,،؛·]/).map(p => p.trim()).filter(p => p.length > 0);
     
     if (participants.length >= 2) {
         const lastEntry = participants[participants.length - 1];
