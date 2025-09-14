@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let isTaggingInProgress = false;
 
     const speedDescriptions = {
+        'tran-zabadan': 'Custom tran zabadan mode',
         'instant': 'No delay between tags',
         'fast': 'Quick tagging, may miss some tags',
         'normal': 'Balanced speed for most groups',
