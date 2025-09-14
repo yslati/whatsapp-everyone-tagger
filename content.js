@@ -160,12 +160,12 @@ function checkForGroupChat() {
 
 function isActualGroupChat(participantsText) {
     if (!participantsText) return false;
-    if (!participantsText.includes(',')) return false;
-    
+    if (!/[，、,]/.test(participantsText)) return false;
+
     // Check if this is a typing indicator
     const lowerText = participantsText.toLowerCase();
-    if (lowerText.includes('typing') || 
-        lowerText.includes('recording') || 
+    if (lowerText.includes('typing') ||
+        lowerText.includes('recording') ||
         lowerText.includes('online')) {
         // Try to get cached participants for this chat
         const cached = sessionStorage.getItem('lastKnownParticipants_' + getCurrentChatId());
@@ -175,15 +175,16 @@ function isActualGroupChat(participantsText) {
             return false;
         }
     }
-    
-    const hasYouAtEnd = participantsText.trim().endsWith('You') || participantsText.trim().endsWith(', You');    
-    const participants = participantsText.split(',').map(p => p.trim());
-    const nonYouParticipants = participants.filter(p => p && p !== 'You' && p !== '');    
-    const containsPrivacyText = participantsText.toLowerCase().includes('privacy') || 
+
+    const youRegex = /(You|toi|vous|tú|tu|du|sie|أنت|ты|вы|당신|あなた|คุณ|आप|તમે|你|您|你们|你們)$/i;
+    const hasYouAtEnd = youRegex.test(participantsText.trim());
+    const participants = participantsText.split(/[，、,]/).map(p => p.trim());
+    const nonYouParticipants = participants.filter(p => p && !youRegex.test(p));
+    const containsPrivacyText = participantsText.toLowerCase().includes('privacy') ||
                               participantsText.toLowerCase().includes('settings') ||
                               participantsText.toLowerCase().includes('about information') ||
                               participantsText.length > 500;
-    
+
     return nonYouParticipants.length >= 2 && !containsPrivacyText && (hasYouAtEnd || participants.length >= 3);
 }
 
@@ -751,7 +752,7 @@ function getParticipantsText() {
         ));
         
         if (title && isParticipantList(title) && !isTypingIndicator) {
-            const commaCount = (title.match(/,/g) || []).length;
+            const commaCount = (title.match(/[，、,]/g) || []).length;
             
             if (commaCount >= 1) {
                 participantCandidates.push({
@@ -763,11 +764,11 @@ function getParticipantsText() {
         }
         
         if (text && text !== title && isParticipantList(text) && !isTypingIndicator) {
-            const commaCount = (text.match(/,/g) || []).length;
-            
+            const commaCount = (text.match(/[，、,]/g) || []).length;
+
             if (commaCount >= 1) {
-                const words = text.split(/[\s,]+/);
-                const nonCommaWords = words.filter(w => w.trim() && !w.includes(','));
+                const words = text.split(/[\s,，、]+/);
+                const nonCommaWords = words.filter(w => w.trim() && !/[，、,]/.test(w));
                 
                 if (nonCommaWords.length > 0 && nonCommaWords[0].length > 10) {
                     participantCandidates.push({
@@ -787,7 +788,7 @@ function getParticipantsText() {
         
         const ariaLabel = element.getAttribute('aria-label');
         if (ariaLabel && isParticipantList(ariaLabel) && !ariaLabel.toLowerCase().includes('typing')) {
-            const commaCount = (ariaLabel.match(/,/g) || []).length;
+            const commaCount = (ariaLabel.match(/[，、,]/g) || []).length;
             if (commaCount >= 1) {
                 participantCandidates.push({
                     content: ariaLabel,
@@ -815,10 +816,10 @@ function getParticipantsText() {
 }
 
 function isParticipantList(text) {
-    if (!text || typeof text !== 'string' || text.length < 3) return false;    
-    if (!text.includes(',')) return false;
-    
-    const commaCount = (text.match(/,/g) || []).length;
+    if (!text || typeof text !== 'string' || text.length < 3) return false;
+    if (!/[，、,]/.test(text)) return false;
+
+    const commaCount = (text.match(/[，、,]/g) || []).length;
     if (commaCount < 1 || commaCount > 1000) return false;
     
     const excludePatterns = [
@@ -835,8 +836,8 @@ function isParticipantList(text) {
         /\bconnecting\b/i,          // Connecting
         /\bsearching\b/i,           // Searching
         /\bloading\b/i,             // Loading
-        /^[,\s]+$/,                 // Only commas and spaces
-        /^[\d\s,.-]+$/,             // Only digits, spaces, commas, dots, dashes
+        /^[,，、\s]+$/,              // Only commas and spaces
+        /^[\d\s,，、.-]+$/,         // Only digits, spaces, commas, dots, dashes
         /^\d{1,2}:\d{2}/,           // Time stamps
         /\d{4}-\d{2}-\d{2}/,        // Dates
         /\bmessage\b/i,             // Message related text
@@ -849,8 +850,8 @@ function isParticipantList(text) {
 
 function calculateUniversalScore(text) {
     let score = 0;
-    const commaCount = (text.match(/,/g) || []).length;
-    score += commaCount * 15;    
+    const commaCount = (text.match(/[，、,]/g) || []).length;
+    score += commaCount * 15;
     
     const phonePatterns = [
         /\+\d{1,4}[\s-]?\d{3,4}[\s-]?\d{3,4}[\s-]?\d{0,4}/g,
@@ -871,7 +872,7 @@ function calculateUniversalScore(text) {
         score += 20;
     }
     
-    const parts = text.split(',').map(p => p.trim());
+    const parts = text.split(/[，、,]/).map(p => p.trim());
     if (parts.length >= 2) {
         const lastPart = parts[parts.length - 1];
         const isLikelyCurrentUser = 
@@ -886,7 +887,7 @@ function calculateUniversalScore(text) {
     
     if (text.length > 10000) score -= 50;
     
-    const onlyNumbersAndCommas = /^[\d\s,.-]+$/.test(text);
+    const onlyNumbersAndCommas = /^[\d\s,，、.-]+$/.test(text);
     if (onlyNumbersAndCommas) score -= 30;
     
     return score;
@@ -894,9 +895,8 @@ function calculateUniversalScore(text) {
 
 function parseParticipants(text) {
     if (!text) return [];
-    
-    const separator = text.includes('，') ? '，' : ',';
-    let participants = text.split(separator).map(p => p.trim()).filter(p => p.length > 0);
+
+    let participants = text.split(/[，、,]/).map(p => p.trim()).filter(p => p.length > 0);
     
     if (participants.length >= 2) {
         const lastEntry = participants[participants.length - 1];
@@ -916,7 +916,7 @@ function parseParticipants(text) {
         if (!participant || /^\s*$/.test(participant)) return false;        
         if (/^(typing|online|last seen|connecting|loading)/i.test(participant)) return false;
         
-        const youVariations = /^(you|toi|vous|tú|tu|du|sie|أنت|ты|вы|당신|あなた|คุณ|आप|તમે)$/i;
+        const youVariations = /^(you|toi|vous|tú|tu|du|sie|أنت|ты|вы|당신|あなた|คุณ|आप|તમે|你|您|你们|你們)$/i;
         if (youVariations.test(participant)) return false;
         if (participant.length > 50) return false;
         
