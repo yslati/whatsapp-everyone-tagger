@@ -330,11 +330,10 @@ async function handleTagButtonClick() {
     document.head.appendChild(style);
     
     try {
-        const result = await chrome.storage.local.get(['tagSpeed', 'clearExisting']);
-        const speed = result.tagSpeed || 'normal';
+        const result = await chrome.storage.local.get(['clearExisting']);
         const clearExisting = result.clearExisting === true;
-        
-        const success = await tagEveryone(clearExisting, speed);
+
+        const success = await tagEveryone(clearExisting);
         
         if (success && !shouldStopTagging) {
             tagButton.innerHTML = `
@@ -422,8 +421,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         }
         
         tagEveryone(
-            request.clearExisting !== undefined ? request.clearExisting : false,
-            request.speed || 'normal'
+            request.clearExisting !== undefined ? request.clearExisting : false
         )
             .then((success) => {
                 if (!shouldStopTagging) {
@@ -616,33 +614,8 @@ async function clearChatInput(chatInput) {
     }
 }
 
-async function tagEveryone(clearExisting = false, speed = 'normal') {
+async function tagEveryone(clearExisting = false) {
     try {
-        const delays = {
-            instant: {
-                afterTag: 20,
-                afterTab: 30,
-                afterSpace: 10
-            },
-            fast: {
-                afterTag: 100,
-                afterTab: 80,
-                afterSpace: 80
-            },
-            normal: {
-                afterTag: 200,
-                afterTab: 150,
-                afterSpace: 150
-            },
-            slow: {
-                afterTag: 400,
-                afterTab: 300,
-                afterSpace: 300
-            }
-        };
-
-        const currentDelays = delays[speed] || delays.normal;
-
         const participantsText = getParticipantsText();
         if (!participantsText) {
             throw new Error('Could not find group members list. Is this a group chat?');
@@ -659,58 +632,40 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
         }
 
         chatInput.focus();
-        await sleep(speed === 'instant' ? 0 : 100);
 
         if (clearExisting) {
             await clearChatInput(chatInput);
-            await sleep(speed === 'instant' ? 0 : 200);
-        } else {
-            if (chatInput.textContent.length > 0 && !chatInput.textContent.endsWith(' ')) {
-                document.execCommand('insertText', false, ' ');
-                if (speed !== 'instant') await sleep(50);
-            }
-        }
-
-        for (let i = 0; i < participants.length; i++) {
-            if (shouldStopTagging) {
-                console.log('Tagging interrupted by user');
-                return false;
-            }
-
-            const participant = participants[i];
-            document.execCommand('insertText', false, `@${participant}`);
-            if (currentDelays.afterTag > 0) await sleep(currentDelays.afterTag);
-            
-            if (shouldStopTagging) {
-                console.log('Tagging interrupted by user');
-                return false;
-            }
-            
-            chatInput.dispatchEvent(new KeyboardEvent('keydown', {
-                key: 'Tab',
-                code: 'Tab',
-                keyCode: 9,
-                which: 9,
-                bubbles: true,
-                cancelable: true
-            }));
-
-            await sleep(currentDelays.afterTab);
-            
-            if (shouldStopTagging) {
-                console.log('Tagging interrupted by user');
-                return false;
-            }
-            
+        } else if (chatInput.textContent.length > 0 && !chatInput.textContent.endsWith(' ')) {
             document.execCommand('insertText', false, ' ');
-            await sleep(currentDelays.afterSpace);
         }
 
+        const mentionHtml = participants
+            .map(p => createMentionTemplate(p))
+            .join('') + ' ';
+
+        document.execCommand('insertHTML', false, mentionHtml);
         return true;
     } catch (error) {
         console.error('Error in tagEveryone:', error);
         throw error;
     }
+}
+
+function createMentionTemplate(participant) {
+    const escaped = participant
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const digits = participant.replace(/[^0-9]/g, '');
+    if (digits) {
+        const ZWSP = '​';
+        const template = `${ZWSP}${digits}@lid${ZWSP}`;
+        return `<span data-app-text-template="${template}" data-lexical-text="true">@${escaped}</span> `;
+    }
+    return `@${escaped} `;
 }
 
 function getParticipantsText() {

@@ -258,9 +258,8 @@ document.addEventListener('DOMContentLoaded', function () {
         tagButton.disabled = true;
         statusMessage.textContent = 'Tagging everyone...';
         
-        chrome.storage.local.get(['clearExisting', 'tagSpeed'], function(result) {
+        chrome.storage.local.get(['clearExisting'], function(result) {
             const clearExisting = result.clearExisting === true;
-            const speed = result.tagSpeed || speedSelect.value;
 
             chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
                 const tabId = tabs[0].id;
@@ -280,8 +279,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 chrome.tabs.sendMessage(tabId, {
                     action: "tagEveryone",
-                    clearExisting: clearExisting,
-                    speed: speed
+                    clearExisting: clearExisting
                 }, function (response) {
                     if (chrome.runtime.lastError) {
                         console.error('Error sending message:', chrome.runtime.lastError);
