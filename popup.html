@@ -365,6 +365,16 @@
       to { opacity: 1; transform: translateY(0); }
     }
     
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes progressPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
     .container > * {
       animation: fadeIn 0.3s ease-out forwards;
     }
@@ -374,6 +384,63 @@
     .container > *:nth-child(3) { animation-delay: 0.3s; }
     .container > *:nth-child(4) { animation-delay: 0.4s; }
     .container > *:nth-child(5) { animation-delay: 0.5s; }
+    
+    /* Progress bar styles */
+    .progress-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 8px 0;
+    }
+    
+    .progress-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .progress-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, white 0%, rgba(255, 255, 255, 0.95) 100%);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      animation: progressPulse 1.5s ease-in-out infinite;
+    }
+    
+    .progress-percentage {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 4px;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>

@@ -24,13 +24,47 @@ document.addEventListener('DOMContentLoaded', function () {
             updatePopupButtonState();
             sendResponse({ received: true });
         }
+        
+        if (request.action === "taggingProgress") {
+            if (!isTaggingInProgress) {
+                isTaggingInProgress = true;
+            }
+            updateProgressDisplay(request.current, request.total, request.percentage);
+            sendResponse({ received: true });
+        }
     });
+
+    function updateProgressDisplay(current, total, percentage) {
+        // if (!isTaggingInProgress) return;
+        
+        // tagButton.disabled = true;
+        // tagButton.style.background = 'linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%)';
+        // tagButton.style.cursor = 'not-allowed';
+        
+        // tagButton.innerHTML = `
+        //     <div class="progress-container">
+        //         <div class="progress-header">
+        //             <div class="spinner"></div>
+        //             <span class="progress-text">Tagging ${current}/${total}</span>
+        //         </div>
+        //         <div class="progress-bar-wrapper">
+        //             <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
+        //         </div>
+        //         <div class="progress-percentage">${percentage}% complete</div>
+        //     </div>
+        // `;
+        
+        statusMessage.textContent = `Tagging ${current} of ${total} members (${percentage}%)`;
+        statusMessage.style.backgroundColor = '#FFF3CD';
+        statusMessage.style.color = '#856404';
+    }
 
     function updatePopupButtonState() {
         if (isTaggingInProgress) {
             tagButton.disabled = true;
-            tagButton.style.backgroundColor = '#cccccc';
-            statusMessage.textContent = 'Tagging in progress... (via inline button)';
+            // tagButton.style.background = 'linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%)';
+            tagButton.style.cursor = 'not-allowed';
+            statusMessage.textContent = 'Tagging in progress...';
             statusMessage.style.backgroundColor = '#FFF3CD';
         } else {
             chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -177,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
             color: white;
             padding: 12px;
             border-radius: 8px;
-            margin: 15px;
+            margin-bottom: 15px;
             text-align: center;
             font-size: 13px;
             box-shadow: 0 3px 8px rgba(255,107,107,0.3);
@@ -186,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         
         refreshNotification.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; margin: 8px;">
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
                     <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
                 </svg>
@@ -225,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 from { opacity: 0; transform: translateY(-10px); }
                 to { opacity: 1; transform: translateY(0); }
             }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
         `;
         document.head.appendChild(style);
         document.body.insertBefore(refreshNotification, document.body.firstChild);
@@ -256,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isTaggingInProgress) return;
 
         tagButton.disabled = true;
-        statusMessage.textContent = 'Tagging everyone...';
+        statusMessage.textContent = 'Starting tagging process...';
         
         chrome.storage.local.get(['clearExisting', 'tagSpeed'], function(result) {
             const clearExisting = result.clearExisting === true;
@@ -296,11 +334,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (response && response.success) {
                         statusMessage.textContent = 'Successfully tagged everyone!';
+                        statusMessage.style.backgroundColor = '#d4edda';
+                        statusMessage.style.color = '#155724';
+                        tagButton.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                            Tag Everyone in Group
+                        `;
 
                         setTimeout(function () {
                             if (!isTaggingInProgress) {
                                 tagButton.disabled = false;
                                 statusMessage.textContent = 'Ready to tag everyone!';
+                                statusMessage.style.backgroundColor = '#DCF8C6';
+                                statusMessage.style.color = '';
                             }
                         }, 3000);
                     } else if (response && response.error === "Tagging already in progress") {
@@ -316,6 +364,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         statusMessage.textContent = 'Error: ' + (response ? response.error : 'Unknown error');
                         statusMessage.style.backgroundColor = '#FFCCCB';
+                        tagButton.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                            Tag Everyone in Group
+                        `;
 
                         setTimeout(function () {
                             if (!isTaggingInProgress) {

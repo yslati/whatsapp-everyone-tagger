@@ -213,6 +213,33 @@ function notifyPopupTaggingState(inProgress) {
     });
 }
 
+function updateProgress(current, total) {
+    const percentage = Math.round((current / total) * 100);
+    
+    if (tagButton) {
+        tagButton.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%; padding: 2px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 3px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite; margin-right: 4px;">
+                        <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
+                    </svg>
+                    <span style="font-size: 10px; font-weight: 600;">${current}/${total}</span>
+                </div>
+                <div style="width: 90%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden;">
+                    <div style="width: ${percentage}%; height: 100%; background: white; transition: width 0.2s ease;"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    chrome.runtime.sendMessage({
+        action: "taggingProgress",
+        current: current,
+        total: total,
+        percentage: percentage
+    });
+}
+
 function injectTagButton() {
     if (tagButton || !isGroupChat || !showInlineButton) return;
     
@@ -671,6 +698,8 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
             }
         }
 
+        const totalParticipants = participants.length;
+
         for (let i = 0; i < participants.length; i++) {
             if (shouldStopTagging) {
                 console.log('Tagging interrupted by user');
@@ -678,6 +707,9 @@ async function tagEveryone(clearExisting = false, speed = 'normal') {
             }
 
             const participant = participants[i];
+            
+            updateProgress(i + 1, totalParticipants);
+            
             document.execCommand('insertText', false, `@${participant}`);
             if (currentDelays.afterTag > 0) await sleep(currentDelays.afterTag);
             
