@@ -1,4 +1,4 @@
-const welcomePageURL = 'https://whatsapp-tagger-welcome.vercel.app/';
+const welcomePageURL = 'https://www.tageveryone.online/';
 
 chrome.runtime.onInstalled.addListener(function(details) {
     if (details.reason === 'install') {
