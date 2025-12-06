@@ -35,25 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function updateProgressDisplay(current, total, percentage) {
-        // if (!isTaggingInProgress) return;
-        
-        // tagButton.disabled = true;
-        // tagButton.style.background = 'linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%)';
-        // tagButton.style.cursor = 'not-allowed';
-        
-        // tagButton.innerHTML = `
-        //     <div class="progress-container">
-        //         <div class="progress-header">
-        //             <div class="spinner"></div>
-        //             <span class="progress-text">Tagging ${current}/${total}</span>
-        //         </div>
-        //         <div class="progress-bar-wrapper">
-        //             <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
-        //         </div>
-        //         <div class="progress-percentage">${percentage}% complete</div>
-        //     </div>
-        // `;
-        
         statusMessage.textContent = `Tagging ${current} of ${total} members (${percentage}%)`;
         statusMessage.style.backgroundColor = '#FFF3CD';
         statusMessage.style.color = '#856404';
@@ -62,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function updatePopupButtonState() {
         if (isTaggingInProgress) {
             tagButton.disabled = true;
-            // tagButton.style.background = 'linear-gradient(135deg, var(--whatsapp-primary) 0%, var(--whatsapp-secondary) 100%)';
             tagButton.style.cursor = 'not-allowed';
             statusMessage.textContent = 'Tagging in progress...';
             statusMessage.style.backgroundColor = '#FFF3CD';
